@@ -60,15 +60,15 @@ class AppTheme {
         ),
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.primary,
+        backgroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 1,
         centerTitle: false,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
         titleTextStyle: GoogleFonts.outfit(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: Colors.white,
+          color: AppColors.textPrimary,
         ),
       ),
       cardTheme: CardThemeData(

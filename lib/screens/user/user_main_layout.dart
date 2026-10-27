@@ -9,6 +9,7 @@ import 'catalog/category_screen.dart';
 import 'order/order_tracking_screen.dart';
 import 'service/booking_service_screen.dart';
 import 'profile/profile_screen.dart';
+import 'auth/login_screen.dart';
 
 class UserMainLayout extends StatefulWidget {
   const UserMainLayout({super.key});
@@ -19,80 +20,189 @@ class UserMainLayout extends StatefulWidget {
 
 class _UserMainLayoutState extends State<UserMainLayout> {
   int _currentIndex = 0;
+  final TextEditingController _searchController = TextEditingController();
 
-  final List<Widget> _pages = [
-    const HomeScreen(),
-    const CategoryScreen(),
-    const OrderTrackingScreen(),
-    const BookingServiceScreen(),
-    const ProfileScreen(),
-  ];
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      HomeScreen(
+        onNavigateToCatalog: () {
+          setState(() {
+            _currentIndex = 1;
+          });
+        },
+      ),
+      const CategoryScreen(),
+      const OrderTrackingScreen(),
+      const BookingServiceScreen(),
+      const ProfileScreen(),
+    ];
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+    final isDark = appState.isDarkMode;
     final unreadCount = appState.unreadNotificationsCount;
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: appState.isDarkMode ? AppColors.darkBackground : AppColors.primary,
-        elevation: 0,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.secondary,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                "EIKO",
-                style: GoogleFonts.outfit(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1,
-                ),
-              ),
+      appBar: _buildAppBar(context, appState, isDark, unreadCount),
+      body: _pages[_currentIndex],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? Colors.white12 : AppColors.border,
+              width: 1,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "MANUFACTUR DYNAMIC",
-                    style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    "Easy | Economic | Excellent",
-                    style: GoogleFonts.plusJakartaSans(
-                      color: AppColors.brandCoffeeLight,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
             ),
           ],
         ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            if (index == 4) {
+              // Profil sementara mengarah ke halaman login sesuai permintaan user
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+              return;
+            }
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+          elevation: 0,
+          selectedItemColor: AppColors.secondary,
+          unselectedItemColor: AppColors.textMuted,
+          selectedLabelStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 10.5,
+            fontWeight: FontWeight.bold,
+          ),
+          unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w500,
+          ),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home_rounded),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.grid_view_outlined),
+              activeIcon: Icon(Icons.grid_view_rounded),
+              label: 'Katalog',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.local_shipping_outlined),
+              activeIcon: Icon(Icons.local_shipping_rounded),
+              label: 'Pesanan',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.build_outlined),
+              activeIcon: Icon(Icons.build_rounded),
+              label: 'Servis',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded),
+              activeIcon: Icon(Icons.person_rounded),
+              label: 'Profil',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(
+      BuildContext context, AppState appState, bool isDark, int unreadCount) {
+    if (_currentIndex == 0) {
+      // Modern Clean Top Bar (Search bar luas tanpa icon EIKO & tanpa tombol Admin)
+      return AppBar(
+        backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        titleSpacing: 16,
+        title: Container(
+          height: 42,
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isDark ? Colors.white10 : AppColors.border,
+              width: 1,
+            ),
+          ),
+          child: TextField(
+            controller: _searchController,
+            onChanged: (val) {
+              appState.setSearchQuery(val);
+              setState(() {});
+            },
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12.5,
+              color: isDark ? Colors.white : AppColors.textPrimary,
+            ),
+            decoration: InputDecoration(
+              hintText: "Cari tipe mesin, roaster, grinder...",
+              hintStyle: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                color: AppColors.textMuted,
+              ),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                size: 20,
+                color: AppColors.textMuted,
+              ),
+              prefixIconConstraints: const BoxConstraints(minWidth: 38),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear_rounded, size: 16),
+                      color: AppColors.textMuted,
+                      onPressed: () {
+                        _searchController.clear();
+                        appState.setSearchQuery('');
+                        setState(() {});
+                      },
+                    )
+                  : null,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 11),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+            ),
+          ),
+        ),
         actions: [
-          // Theme Toggle (Moon / Sun) matching Website Navbar
+          // Theme Toggle (Moon / Sun)
           IconButton(
             icon: Icon(
-              appState.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-              color: Colors.white,
+              isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+              color: isDark ? Colors.white70 : AppColors.textSecondary,
               size: 20,
             ),
-            tooltip: "Ganti Tema Terang/Gelap",
+            tooltip: "Ganti Tema",
             onPressed: () {
               appState.toggleTheme();
             },
@@ -103,21 +213,27 @@ class _UserMainLayoutState extends State<UserMainLayout> {
             alignment: Alignment.center,
             children: [
               IconButton(
-                icon: const Icon(Icons.notifications_none, color: Colors.white),
+                icon: Icon(
+                  Icons.notifications_none_rounded,
+                  color: isDark ? Colors.white : AppColors.textPrimary,
+                  size: 22,
+                ),
+                tooltip: "Notifikasi",
                 onPressed: () {
                   showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
                     builder: (context) => const NotificationSheet(),
                   );
                 },
               ),
               if (unreadCount > 0)
                 Positioned(
-                  top: 10,
-                  right: 10,
+                  top: 9,
+                  right: 9,
                   child: Container(
-                    padding: const EdgeInsets.all(4),
+                    padding: const EdgeInsets.all(3),
                     decoration: const BoxDecoration(
                       color: AppColors.secondary,
                       shape: BoxShape.circle,
@@ -139,107 +255,99 @@ class _UserMainLayoutState extends State<UserMainLayout> {
                 ),
             ],
           ),
+          const SizedBox(width: 8),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: isDark ? Colors.white10 : AppColors.border,
+            height: 1,
+          ),
+        ),
+      );
+    } else {
+      // Clean header for secondary tabs
+      final titles = [
+        "Beranda",
+        "Katalog Mesin",
+        "Pesanan & Status PO",
+        "Layanan Servis & Garansi",
+        "Profil Perusahaan",
+      ];
 
-          // Integrated Mode Switcher (User App <-> Admin Web Dashboard)
-          Container(
-            margin: const EdgeInsets.only(right: 12),
-            child: InkWell(
-              onTap: () {
-                appState.toggleAppMode();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Beralih ke Panel Admin Dashboard Web..."),
-                    backgroundColor: AppColors.primary,
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              },
-              borderRadius: BorderRadius.circular(20),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: AppColors.secondary,
-                  borderRadius: BorderRadius.circular(20),
+      return AppBar(
+        backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          titles[_currentIndex],
+          style: GoogleFonts.outfit(
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : AppColors.textPrimary,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+              color: isDark ? Colors.white70 : AppColors.textSecondary,
+              size: 20,
+            ),
+            onPressed: () => appState.toggleTheme(),
+          ),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.notifications_none_rounded,
+                  color: isDark ? Colors.white : AppColors.textPrimary,
+                  size: 22,
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.admin_panel_settings, size: 14, color: Colors.white),
-                    const SizedBox(width: 4),
-                    Text(
-                      "ADMIN",
-                      style: GoogleFonts.plusJakartaSans(
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => const NotificationSheet(),
+                  );
+                },
+              ),
+              if (unreadCount > 0)
+                Positioned(
+                  top: 9,
+                  right: 9,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: const BoxDecoration(
+                      color: AppColors.secondary,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Text(
+                      '$unreadCount',
+                      style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 10,
+                        fontSize: 9,
                         fontWeight: FontWeight.bold,
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
+            ],
           ),
+          const SizedBox(width: 4),
         ],
-      ),
-      body: _pages[_currentIndex],
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: AppColors.border, width: 1)),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.textMuted,
-          selectedLabelStyle: GoogleFonts.plusJakartaSans(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: isDark ? Colors.white10 : AppColors.border,
+            height: 1,
           ),
-          unselectedLabelStyle: GoogleFonts.plusJakartaSans(
-            fontSize: 11,
-          ),
-          items: const [
-            BottomNavigationBarView(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home, color: AppColors.primary),
-              label: 'Home',
-            ),
-            BottomNavigationBarView(
-              icon: Icon(Icons.grid_view_outlined),
-              activeIcon: Icon(Icons.grid_view, color: AppColors.primary),
-              label: 'Katalog',
-            ),
-            BottomNavigationBarView(
-              icon: Icon(Icons.local_shipping_outlined),
-              activeIcon: Icon(Icons.local_shipping, color: AppColors.primary),
-              label: 'Pesanan Saya',
-            ),
-            BottomNavigationBarView(
-              icon: Icon(Icons.build_outlined),
-              activeIcon: Icon(Icons.build, color: AppColors.primary),
-              label: 'Layanan Servis',
-            ),
-            BottomNavigationBarView(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person, color: AppColors.primary),
-              label: 'Profil',
-            ),
-          ],
         ),
-      ),
-    );
+      );
+    }
   }
-}
-
-class BottomNavigationBarView extends BottomNavigationBarItem {
-  const BottomNavigationBarView({
-    required super.icon,
-    super.activeIcon,
-    required super.label,
-  });
 }

@@ -65,7 +65,7 @@ class MockData {
           price: 185000000,
           rating: 4.8,
           reviewsCount: 19,
-          imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80',
+          imageUrl: 'https://images.unsplash.com/photo-1509785307050-d4066910ec1e?w=800&auto=format&fit=crop&q=80',
           description:
               'Mesin sangrai kopi (roaster) kapasitas 5kg per batch dengan kontrol aliran udara elektrik, drum double wall cast iron, dan integrasi Artisan Software via Bluetooth/USB.',
           specifications: TechnicalSpec(
@@ -117,7 +117,7 @@ class MockData {
           price: 18500000,
           rating: 4.9,
           reviewsCount: 15,
-          imageUrl: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4e?w=800&auto=format&fit=crop&q=80',
+          imageUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
           description:
               'Sistem pemurni air khusus mesin espresso dengan filter remineralisasi mineral presisi (TDS 50-90 ppm) untuk menjaga cita rasa kopi & mencegah kerak boiler.',
           specifications: TechnicalSpec(
