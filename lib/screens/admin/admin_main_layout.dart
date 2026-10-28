@@ -209,7 +209,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
             ),
           ),
           selected: isSel,
-          selectedTileColor: AppColors.secondary.withOpacity(0.2),
+          selectedTileColor: AppColors.secondary.withValues(alpha: 0.2),
           onTap: () {
             setState(() {
               _selectedAdminIndex = index;

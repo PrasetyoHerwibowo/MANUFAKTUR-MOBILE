@@ -210,7 +210,7 @@ class AppState extends ChangeNotifier {
   }
 
   // Dynamic getters for dropdowns/chips
-  List<String> get availableCommodities => const ['Semua', 'Kopi', 'Kakao'];
+  List<String> get availableCommodities => const ['Semua', 'Roaster Kopi', 'Mesin Kopi', 'Kakao'];
   List<String> get availableProcessStages => const ['Semua', 'Hulu', 'Hilir'];
 
   List<String> get availableMachineTypes {
@@ -366,7 +366,7 @@ class AppState extends ChangeNotifier {
   }
 
   // Orders
-  List<OrderModel> _orders = MockData.initialOrders;
+  final List<OrderModel> _orders = MockData.initialOrders;
   List<OrderModel> get orders => _orders;
 
   void createStandardPO({
@@ -460,7 +460,7 @@ class AppState extends ChangeNotifier {
   }
 
   // Custom Orders / RFQ
-  List<CustomOrderModel> _customOrders = MockData.initialCustomOrders;
+  final List<CustomOrderModel> _customOrders = MockData.initialCustomOrders;
   List<CustomOrderModel> get customOrders => _customOrders;
 
   void submitRFQ({
@@ -514,7 +514,7 @@ class AppState extends ChangeNotifier {
   }
 
   // Service Tickets
-  List<ServiceTicketModel> _serviceTickets = MockData.initialServiceTickets;
+  final List<ServiceTicketModel> _serviceTickets = MockData.initialServiceTickets;
   List<ServiceTicketModel> get serviceTickets => _serviceTickets;
 
   void createServiceTicket({
@@ -567,7 +567,7 @@ class AppState extends ChangeNotifier {
   }
 
   // Warranty Claims
-  List<WarrantyClaimModel> _warrantyClaims = MockData.initialWarrantyClaims;
+  final List<WarrantyClaimModel> _warrantyClaims = MockData.initialWarrantyClaims;
   List<WarrantyClaimModel> get warrantyClaims => _warrantyClaims;
 
   void submitWarrantyClaim({
@@ -636,5 +636,13 @@ class AppState extends ChangeNotifier {
       n.isRead = true;
     }
     notifyListeners();
+  }
+
+  void markNotificationAsRead(String id) {
+    final idx = _notifications.indexWhere((n) => n.id == id);
+    if (idx != -1 && !_notifications[idx].isRead) {
+      _notifications[idx].isRead = true;
+      notifyListeners();
+    }
   }
 }

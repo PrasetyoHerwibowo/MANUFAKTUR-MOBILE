@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../core/theme/app_colors.dart';
 import '../../widgets/app_notification_sheet.dart';
-import '../../widgets/product_filter_bottom_sheet.dart';
 import 'home/home_screen.dart';
 import 'order/order_tracking_screen.dart';
 import 'service/booking_service_screen.dart';
@@ -185,48 +184,6 @@ class _UserMainLayoutState extends State<UserMainLayout> {
           ),
         ),
         actions: [
-          // Filter Button with Active Badge
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: Icon(
-                  Icons.tune_rounded,
-                  color: appState.hasActiveFilters
-                      ? AppColors.secondary
-                      : (isDark ? Colors.white70 : AppColors.textSecondary),
-                  size: 20,
-                ),
-                tooltip: "Filter & Urutkan",
-                onPressed: () {
-                  ProductFilterBottomSheet.show(context);
-                },
-              ),
-              if (appState.activeFiltersCount > 0)
-                Positioned(
-                  top: 9,
-                  right: 9,
-                  child: Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: const BoxDecoration(
-                      color: AppColors.secondary,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-                    child: Text(
-                      '${appState.activeFiltersCount}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 8.5,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-
           // Theme Toggle (Moon / Sun)
           IconButton(
             icon: Icon(

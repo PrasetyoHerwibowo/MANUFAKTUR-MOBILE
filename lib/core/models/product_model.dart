@@ -66,7 +66,7 @@ class ProductModel {
   final String videoReviewTitle;
   final String videoReviewDuration;
   final bool isCustomizable;
-  final String stockStatus; // Ready Stock, Pre-Order 14 Hari
+  final String stockStatus; // Sistem Pre-Order (PO)
 
   ProductModel({
     required this.id,

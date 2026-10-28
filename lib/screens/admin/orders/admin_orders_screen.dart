@@ -222,39 +222,43 @@ class AdminOrdersScreen extends StatelessWidget {
         builder: (context, setDialogState) => AlertDialog(
           title: Text("Update Status Lini Produksi",
               style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: OrderStatus.values.map((stg) {
-              return RadioListTile<OrderStatus>(
-                title: Text(
-                  OrderModel(
-                    id: '',
-                    poNumber: '',
-                    companyName: '',
-                    contactPerson: '',
-                    productName: '',
-                    category: '',
-                    quantity: 1,
-                    pricePerUnit: 0,
-                    totalAmount: 0,
-                    dpAmount: 0,
-                    pelunasanAmount: 0,
-                    orderDate: '',
-                    estimatedCompletionDate: '',
-                    status: stg,
-                    deliveryAddress: '',
-                  ).statusTitle,
-                  style: GoogleFonts.plusJakartaSans(fontSize: 12),
-                ),
-                value: stg,
-                groupValue: selected,
-                onChanged: (val) {
-                  setDialogState(() {
-                    selected = val!;
-                  });
-                },
-              );
-            }).toList(),
+          content: RadioGroup<OrderStatus>(
+            groupValue: selected,
+            onChanged: (val) {
+              if (val != null) {
+                setDialogState(() {
+                  selected = val;
+                });
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: OrderStatus.values.map((stg) {
+                return RadioListTile<OrderStatus>(
+                  title: Text(
+                    OrderModel(
+                      id: '',
+                      poNumber: '',
+                      companyName: '',
+                      contactPerson: '',
+                      productName: '',
+                      category: '',
+                      quantity: 1,
+                      pricePerUnit: 0,
+                      totalAmount: 0,
+                      dpAmount: 0,
+                      pelunasanAmount: 0,
+                      orderDate: '',
+                      estimatedCompletionDate: '',
+                      status: stg,
+                      deliveryAddress: '',
+                    ).statusTitle,
+                    style: GoogleFonts.plusJakartaSans(fontSize: 12),
+                  ),
+                  value: stg,
+                );
+              }).toList(),
+            ),
           ),
           actions: [
             TextButton(

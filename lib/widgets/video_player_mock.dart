@@ -58,7 +58,7 @@ class _VideoPlayerModalState extends State<VideoPlayerModal> {
                           ),
                         ),
 
-                        Container(color: Colors.black.withOpacity(0.4)),
+                        Container(color: Colors.black.withValues(alpha: 0.4)),
                         if (!isPlaying)
                           Center(
                             child: Container(

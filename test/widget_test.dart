@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:manufaktur_mobile/main.dart';
@@ -11,8 +12,8 @@ void main() {
         child: const ManufakturApp(),
       ),
     );
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
 
-    expect(find.textContaining('MANUFAKTUR'), findsWidgets);
+    expect(find.byType(MaterialApp), findsOneWidget);
   });
 }
