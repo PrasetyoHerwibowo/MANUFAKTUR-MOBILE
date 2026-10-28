@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../../providers/app_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/product_model.dart';
@@ -25,6 +26,30 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey _catalogSectionKey = GlobalKey();
   int _currentBannerIndex = 0;
   Timer? _bannerTimer;
+
+  final List<Map<String, dynamic>> _commodities = [
+    {
+      'id': 'Semua',
+      'label': 'Semua Mesin',
+      'icon': Icons.apps_rounded,
+    },
+    {
+      'id': 'Kopi',
+      'label': 'Kopi (Hulu-Hilir)',
+      'icon': Icons.coffee_rounded,
+    },
+    {
+      'id': 'Kakao',
+      'label': 'Kakao (Hulu-Hilir)',
+      'icon': Icons.spa_rounded,
+    },
+  ];
+
+  final List<Map<String, String>> _processStages = [
+    {'id': 'Semua', 'label': 'Semua Alur'},
+    {'id': 'Hulu', 'label': 'Hulu (Pasca Panen)'},
+    {'id': 'Hilir', 'label': 'Hilir (Pengolahan)'},
+  ];
 
   @override
   void initState() {
@@ -81,24 +106,29 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
 
-          // 1. Promotional Banner Carousel (PageView with Animated Indicator)
+          // 1. Interactive Commodity & Process Stage Selector
+          _buildCategorySelector(appState, isDark),
+
+          const SizedBox(height: 10),
+
+          // 2. Promotional Banner Carousel (PageView with Animated Indicator)
           _buildBannerCarousel(context, isDark),
 
           const SizedBox(height: 10),
 
-          // 2. Trust Badges / Value Propositions (Like Reference 3-Pill Strip)
+          // 3. Trust Badges / Value Propositions (Like Reference 3-Pill Strip)
           _buildTrustBadges(isDark),
 
           const SizedBox(height: 16),
 
-          // 3. Section Header: Title, Filters & Controls
+          // 4. Section Header: Title, Filters & Controls
           _buildSectionHeader(context, appState, isDark, filteredProducts.length),
 
           const SizedBox(height: 10),
 
-          // 4. Product Display (Clean 2-Column Grid View)
+          // 5. Product Display (Clean 2-Column Grid View)
           if (filteredProducts.isEmpty)
             _buildEmptyState(appState, isDark)
           else
@@ -106,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 20),
 
-          // 5. WhatsApp Engineering Consultation Banner (Soft Mint Tone)
+          // 6. WhatsApp Engineering Consultation Banner (Soft Mint Tone)
           _buildConsultationBanner(context, isDark),
 
           const SizedBox(height: 24),
@@ -115,7 +145,194 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ================= 1. BANNER CAROUSEL =================
+  // ================= 1. COMMODITY & PROCESS STAGE SELECTOR =================
+  Widget _buildCategorySelector(AppState appState, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          // Row 1: 3-Way Commodity Tabs (Semua / Kopi Hulu-Hilir / Kakao Hulu-Hilir)
+          Row(
+            children: _commodities.map((item) {
+              final isSelected = appState.selectedCommodity == item['id'];
+              final isCoffee = item['id'] == 'Kopi';
+              final isCocoa = item['id'] == 'Kakao';
+
+              Color activeBg;
+              Color activeBorder;
+              Color activeColor;
+
+              if (isCoffee) {
+                activeBg = isDark ? const Color(0xFF382314) : const Color(0xFFFEF3C7);
+                activeBorder = AppColors.brandCoffee;
+                activeColor = AppColors.brandCoffee;
+              } else if (isCocoa) {
+                activeBg = isDark ? const Color(0xFF2C1608) : const Color(0xFFFFEDD5);
+                activeBorder = AppColors.brandCocoa;
+                activeColor = AppColors.brandCocoa;
+              } else {
+                activeBg = isDark ? const Color(0xFF2E1215) : const Color(0xFFFEF2F2);
+                activeBorder = AppColors.secondary;
+                activeColor = AppColors.secondary;
+              }
+
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2.5),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        final id = item['id']?.toString() ?? 'Semua';
+                        appState.setCommodityFilter(id);
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? activeBg
+                              : (isDark ? const Color(0xFF141C28) : Colors.white),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected
+                                ? activeBorder
+                                : (isDark
+                                    ? Colors.white.withValues(alpha: 0.08)
+                                    : const Color(0xFFE2E8F0)),
+                            width: isSelected ? 1.5 : 1,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: activeBorder.withValues(alpha: 0.22),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ]
+                              : [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.03),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              (item['icon'] as IconData?) ?? Icons.category_rounded,
+                              size: 20,
+                              color: isSelected
+                                  ? activeColor
+                                  : (isDark ? Colors.white70 : AppColors.textSecondary),
+                            ),
+                            const SizedBox(height: 4),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                item['label']?.toString() ?? '',
+                                maxLines: 1,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10.5,
+                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                                  color: isSelected
+                                      ? activeColor
+                                      : (isDark
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.textSecondary),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Row 2: Alur Proses Filter Chips (Hulu vs Hilir)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: _processStages.map((stage) {
+                final stageId = stage['id'] ?? 'Semua';
+                final isSelected = appState.selectedProcessStage == stageId;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: InkWell(
+                    onTap: () {
+                      appState.setProcessStageFilter(stageId);
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? (isDark
+                                ? AppColors.secondary.withValues(alpha: 0.25)
+                                : AppColors.secondary.withValues(alpha: 0.12))
+                            : (isDark
+                                ? AppColors.darkSurface
+                                : const Color(0xFFF1F5F9)),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.secondary
+                              : (isDark ? Colors.white12 : AppColors.border),
+                          width: isSelected ? 1.2 : 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            stageId == 'Hulu'
+                                ? Icons.grass_rounded
+                                : (stageId == 'Hilir'
+                                    ? Icons.inventory_2_rounded
+                                    : Icons.linear_scale_rounded),
+                            size: 13,
+                            color: isSelected
+                                ? AppColors.secondary
+                                : (isDark ? Colors.white60 : AppColors.textMuted),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            stage['label'] ?? '',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10.5,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                              color: isSelected
+                                  ? AppColors.secondary
+                                  : (isDark ? Colors.white70 : AppColors.textSecondary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 250.ms);
+  }
+
+  // ================= 2. BANNER CAROUSEL =================
   Widget _buildBannerCarousel(BuildContext context, bool isDark) {
     return Column(
       children: [
