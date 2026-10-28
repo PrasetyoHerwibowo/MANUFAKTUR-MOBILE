@@ -836,7 +836,7 @@ class MockData {
           preferredTime: '14:00 WIB',
           address: 'Jl. Sunset Road No. 88, Kuta, Bali',
           issueDescription: 'Tekanan steam wand menurun dari 1.5 Bar ke 0.9 Bar. Perlu cek solenoid valve.',
-          status: TicketStatus.teknisiOtw,
+          status: TicketStatus.dalamPengerjaan,
           technicianName: 'Teknisi Made Dewa',
           technicianPhone: '0812-9988-7766',
         ),

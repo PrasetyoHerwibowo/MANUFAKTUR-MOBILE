@@ -61,7 +61,7 @@ class ServiceTicketModel {
       case TicketStatus.dijadwalkan:
         return "Terjadwal";
       case TicketStatus.teknisiOtw:
-        return "Teknisi Menuju Lokasi";
+        return "Dalam Proses";
       case TicketStatus.dalamPengerjaan:
         return "Proses Pengerjaan";
       case TicketStatus.selesai:

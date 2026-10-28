@@ -351,7 +351,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const WarrantyClaimScreen(),
+                                  builder: (context) =>
+                                      const WarrantyClaimScreen(asStandalonePage: true),
                                 ),
                               );
                             },
