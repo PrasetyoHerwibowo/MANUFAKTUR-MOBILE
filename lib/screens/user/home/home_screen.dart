@@ -88,7 +88,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   @override
-  @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final isDark = appState.isDarkMode;
