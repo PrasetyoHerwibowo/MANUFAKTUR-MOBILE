@@ -255,6 +255,19 @@ class AppTheme {
           fontSize: 14,
         ),
       ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: AppColors.secondaryLight,
+        unselectedLabelColor: AppColors.darkTextSecondary,
+        indicatorColor: AppColors.secondary,
+        labelStyle: GoogleFonts.plusJakartaSans(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+        unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+          fontWeight: FontWeight.normal,
+          fontSize: 14,
+        ),
+      ),
     );
   }
 }
