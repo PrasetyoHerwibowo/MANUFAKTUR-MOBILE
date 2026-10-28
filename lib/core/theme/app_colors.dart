@@ -13,6 +13,11 @@ class AppColors {
   static const Color brandCoffeeDark = Color(0xFF8B502C);
   static const Color brandCoffeeLight = Color(0xFFE0BB8C);
 
+  // Cocoa / Cacao Chocolate Manufacturing Accents
+  static const Color brandCocoa = Color(0xFF8D5B4C);
+  static const Color brandCocoaDark = Color(0xFF5D3A30);
+  static const Color brandCocoaLight = Color(0xFFD7CCC8);
+
   // Background & Surface Colors (Crisp & High Readability)
   static const Color background = Color(0xFFF8FAFC); // Clean Slate 50
   static const Color surface = Color(0xFFFFFFFF);

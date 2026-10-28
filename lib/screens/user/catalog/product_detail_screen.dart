@@ -21,6 +21,7 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int _selectedModelIndex = 0;
 
   @override
   void initState() {
@@ -44,8 +45,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     final appState = Provider.of<AppState>(context);
     final isDark = appState.isDarkMode;
     final p = widget.product;
+    final hasModels = p.commodity == 'Kopi' && p.capacityModels.isNotEmpty;
+    final selectedModel = hasModels ? p.capacityModels[_selectedModelIndex] : null;
+    final activePrice = selectedModel != null ? selectedModel.price : p.price;
     final formattedPrice =
-        "Rp ${p.price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}";
+        "Rp ${activePrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}";
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC),
@@ -112,11 +116,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppColors.secondary,
+                            color: p.commodity == 'Kakao'
+                                ? AppColors.brandCocoa
+                                : AppColors.brandCoffee,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            p.category.toUpperCase(),
+                            "${p.commodity.toUpperCase()} • ${p.processStage.toUpperCase()} ${p.machineType.isNotEmpty ? '• ${p.machineType.toUpperCase()}' : ''}",
                             style: GoogleFonts.plusJakartaSans(
                               color: Colors.white,
                               fontSize: 9.5,
@@ -177,7 +183,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Harga PO Standar (DP 50%)",
+                                hasModels
+                                    ? "Harga Model: ${selectedModel!.shortLabel} (DP 50%)"
+                                    : "Harga PO Standar (DP 50%)",
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
@@ -195,7 +203,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                                   style: GoogleFonts.outfit(
                                     fontSize: 22,
                                     fontWeight: FontWeight.w800,
-                                    color: AppColors.secondary,
+                                    color: p.commodity == 'Kopi'
+                                        ? AppColors.brandCoffee
+                                        : AppColors.secondary,
                                   ),
                                 ),
                               ),
@@ -244,6 +254,241 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                       ],
                     ),
                   ),
+
+                  // A2. Coffee Capacity Models Selector Card (Khusus Mesin Kopi)
+                  if (hasModels) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkCardBg : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.brandCoffee.withValues(alpha: 0.35)
+                              : const Color(0xFFFDE68A),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.brandCoffee.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.speed_rounded,
+                                  size: 16,
+                                  color: AppColors.brandCoffee,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Pilih Model Kapasitas Produksi",
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 14.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? Colors.white : AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    Text(
+                                      "Model ditentukan dari kapasitas batch atau kg/jam.",
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 10.5,
+                                        color: isDark
+                                            ? AppColors.darkTextSecondary
+                                            : AppColors.textMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Column(
+                            children: List.generate(p.capacityModels.length, (idx) {
+                              final model = p.capacityModels[idx];
+                              final isSelected = _selectedModelIndex == idx;
+                              final modelPrice =
+                                  "Rp ${model.price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}";
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedModelIndex = idx;
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 11),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? (isDark
+                                              ? AppColors.brandCoffeeDark
+                                                  .withValues(alpha: 0.45)
+                                              : const Color(0xFFFEF3C7))
+                                          : (isDark
+                                              ? const Color(0xFF131A26)
+                                              : const Color(0xFFF8FAFC)),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? AppColors.brandCoffee
+                                            : (isDark
+                                                ? Colors.white10
+                                                : AppColors.border),
+                                        width: isSelected ? 1.5 : 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 20,
+                                          height: 20,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? AppColors.brandCoffee
+                                                  : (isDark
+                                                      ? Colors.white30
+                                                      : AppColors.border),
+                                              width: isSelected ? 5.5 : 1.5,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      model.modelName,
+                                                      style: GoogleFonts
+                                                          .plusJakartaSans(
+                                                        fontSize: 12.5,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: isSelected
+                                                            ? (isDark
+                                                                ? Colors.white
+                                                                : const Color(
+                                                                    0xFF78350F))
+                                                            : (isDark
+                                                                ? Colors.white
+                                                                : AppColors
+                                                                    .textPrimary),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 6,
+                                                        vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: isSelected
+                                                          ? AppColors.brandCoffee
+                                                          : (isDark
+                                                              ? Colors.white10
+                                                              : AppColors.border),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              4),
+                                                    ),
+                                                    child: Text(
+                                                      model.shortLabel,
+                                                      style: GoogleFonts
+                                                          .plusJakartaSans(
+                                                        fontSize: 9.5,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        color: isSelected
+                                                            ? Colors.white
+                                                            : (isDark
+                                                                ? Colors.white70
+                                                                : AppColors
+                                                                    .textSecondary),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 3),
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  Text(
+                                                    "Daya: ${model.power}",
+                                                    style: GoogleFonts
+                                                        .plusJakartaSans(
+                                                      fontSize: 11,
+                                                      color: isDark
+                                                          ? AppColors
+                                                              .darkTextSecondary
+                                                          : AppColors.textMuted,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    modelPrice,
+                                                    style: GoogleFonts.outfit(
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: isSelected
+                                                          ? (isDark
+                                                              ? const Color(
+                                                                  0xFFFDE68A)
+                                                              : const Color(
+                                                                  0xFF92400E))
+                                                          : (isDark
+                                                              ? Colors.white70
+                                                              : AppColors
+                                                                  .primary),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 14),
 
@@ -358,7 +603,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   // D. Active Tab Content (Direct Page Flow - No inner scroll trap!)
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 250),
-                    child: _buildCurrentTabContent(context, p, isDark),
+                    child: _buildCurrentTabContent(context, p, isDark, selectedModel),
                   ),
 
                   const SizedBox(height: 24),
@@ -430,15 +675,49 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
                   flex: 2,
                   child: ElevatedButton(
                     onPressed: () {
+                      final activeProduct = hasModels
+                          ? ProductModel(
+                              id: p.id,
+                              name: "${p.name} (${selectedModel!.shortLabel})",
+                              category: p.category,
+                              commodity: p.commodity,
+                              processStage: p.processStage,
+                              machineType: p.machineType,
+                              modelName: selectedModel.modelName,
+                              capacityScale: selectedModel.scale,
+                              capacityModels: p.capacityModels,
+                              price: selectedModel.price,
+                              rating: p.rating,
+                              reviewsCount: p.reviewsCount,
+                              imageUrl: p.imageUrl,
+                              description: p.description,
+                              specifications: TechnicalSpec(
+                                tipe: p.specifications.tipe,
+                                kapasitas: selectedModel.capacity,
+                                sumberListrik: p.specifications.sumberListrik,
+                                dayaListrik: selectedModel.power,
+                                dimensi: p.specifications.dimensi,
+                                berat: p.specifications.berat,
+                                materialBoiler: p.specifications.materialBoiler,
+                                kapasitasBoiler: p.specifications.kapasitasBoiler,
+                              ),
+                              manualBookPdfName: p.manualBookPdfName,
+                              videoReviewTitle: p.videoReviewTitle,
+                              videoReviewDuration: p.videoReviewDuration,
+                            )
+                          : p;
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => PoFormScreen(product: p),
+                          builder: (context) => PoFormScreen(product: activeProduct),
                         ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.secondary,
+                      backgroundColor: p.commodity == 'Kopi'
+                          ? AppColors.brandCoffee
+                          : AppColors.secondary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
@@ -464,7 +743,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     );
   }
 
-  Widget _buildCurrentTabContent(BuildContext context, ProductModel p, bool isDark) {
+  Widget _buildCurrentTabContent(BuildContext context, ProductModel p, bool isDark, [CoffeeCapacityModel? selectedModel]) {
     switch (_tabController.index) {
       case 1:
         return _buildManualBookTab(context, p, isDark);
@@ -472,7 +751,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
         return _buildVideoReviewTab(context, p, isDark);
       case 0:
       default:
-        return _buildSpecsTab(p.specifications, isDark);
+        final activeSpec = selectedModel != null
+            ? TechnicalSpec(
+                tipe: p.specifications.tipe,
+                kapasitas: selectedModel.capacity,
+                sumberListrik: p.specifications.sumberListrik,
+                dayaListrik: selectedModel.power,
+                dimensi: p.specifications.dimensi,
+                berat: p.specifications.berat,
+                materialBoiler: p.specifications.materialBoiler,
+                kapasitasBoiler: p.specifications.kapasitasBoiler,
+              )
+            : p.specifications;
+        return _buildSpecsTab(activeSpec, isDark);
     }
   }
 

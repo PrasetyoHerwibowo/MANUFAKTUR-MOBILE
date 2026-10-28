@@ -126,20 +126,71 @@ class AppState extends ChangeNotifier {
   }
 
   // Products
-  List<ProductModel> _products = MockData.initialProducts;
-  List<ProductModel> get products => _products;
+  List<ProductModel>? _products;
+  List<ProductModel> get products {
+    if (_products == null || _products!.isEmpty || _products!.length < MockData.initialProducts.length) {
+      _products = List<ProductModel>.from(MockData.initialProducts);
+    }
+    return _products!;
+  }
 
-  String _searchQuery = '';
-  String get searchQuery => _searchQuery;
+  String? _searchQuery = '';
+  String get searchQuery => _searchQuery ?? '';
 
-  String _selectedCategory = 'Semua';
-  String get selectedCategory => _selectedCategory;
+  // Commodity: 'Semua', 'Kopi', 'Kakao'
+  String? _selectedCommodity = 'Semua';
+  String get selectedCommodity => _selectedCommodity ?? 'Semua';
 
-  String _selectedPowerSource = 'Semua';
-  String get selectedPowerSource => _selectedPowerSource;
+  // Process Stage: 'Semua', 'Hulu', 'Hilir'
+  String? _selectedProcessStage = 'Semua';
+  String get selectedProcessStage => _selectedProcessStage ?? 'Semua';
+
+  // Specific Machine Type / Name
+  String? _selectedMachineType = 'Semua';
+  String get selectedMachineType => _selectedMachineType ?? 'Semua';
+
+  // Capacity Scale (Khusus Kopi)
+  String? _selectedCapacityScale = 'Semua';
+  String get selectedCapacityScale => _selectedCapacityScale ?? 'Semua';
+
+  // Legacy Category & Power Source
+  String? _selectedCategory = 'Semua';
+  String get selectedCategory => _selectedCategory ?? 'Semua';
+
+  String? _selectedPowerSource = 'Semua';
+  String get selectedPowerSource => _selectedPowerSource ?? 'Semua';
+
+  String? _sortBy = 'Populer'; // 'Populer', 'Harga Terendah', 'Harga Tertinggi', 'Rating'
+  String get sortBy => _sortBy ?? 'Populer';
 
   void setSearchQuery(String query) {
     _searchQuery = query;
+    notifyListeners();
+  }
+
+  void setCommodityFilter(String commodity) {
+    _selectedCommodity = commodity;
+    // Reset subordinate machine type and capacity scale when commodity switches
+    _selectedMachineType = 'Semua';
+    if (commodity == 'Kakao') {
+      _selectedCapacityScale = 'Semua';
+    }
+    notifyListeners();
+  }
+
+  void setProcessStageFilter(String stage) {
+    _selectedProcessStage = stage;
+    _selectedMachineType = 'Semua';
+    notifyListeners();
+  }
+
+  void setMachineTypeFilter(String type) {
+    _selectedMachineType = type;
+    notifyListeners();
+  }
+
+  void setCapacityScaleFilter(String scale) {
+    _selectedCapacityScale = scale;
     notifyListeners();
   }
 
@@ -153,40 +204,163 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setSortBy(String sort) {
+    _sortBy = sort;
+    notifyListeners();
+  }
+
+  // Dynamic getters for dropdowns/chips
+  List<String> get availableCommodities => const ['Semua', 'Kopi', 'Kakao'];
+  List<String> get availableProcessStages => const ['Semua', 'Hulu', 'Hilir'];
+
+  List<String> get availableMachineTypes {
+    final curCommodity = selectedCommodity;
+    final curStage = selectedProcessStage;
+    final filtered = products.where((p) {
+      final matchCommodity = curCommodity == 'Semua' ||
+          p.commodity.toLowerCase() == curCommodity.toLowerCase();
+      final matchStage = curStage == 'Semua' ||
+          p.processStage.toLowerCase() == curStage.toLowerCase();
+      return matchCommodity && matchStage;
+    });
+
+    final Set<String> types = {};
+    for (final p in filtered) {
+      if (p.machineType.isNotEmpty) {
+        types.add(p.machineType);
+      }
+    }
+    final sortedTypes = types.toList()..sort();
+    return ['Semua', ...sortedTypes];
+  }
+
+  List<String> get availableCapacityScales => const [
+        'Semua',
+        'Mikro / Lab (< 3 kg)',
+        'Komersial / UMKM (3 - 10 kg)',
+        'Industri (> 10 kg)',
+      ];
+
+  bool get hasActiveFilters =>
+      searchQuery.isNotEmpty ||
+      selectedCommodity != 'Semua' ||
+      selectedProcessStage != 'Semua' ||
+      selectedMachineType != 'Semua' ||
+      selectedCapacityScale != 'Semua' ||
+      selectedCategory != 'Semua' ||
+      selectedPowerSource != 'Semua' ||
+      sortBy != 'Populer';
+
+  int get activeFiltersCount {
+    int count = 0;
+    if (selectedCommodity != 'Semua') count++;
+    if (selectedProcessStage != 'Semua') count++;
+    if (selectedMachineType != 'Semua') count++;
+    if (selectedCapacityScale != 'Semua') count++;
+    if (selectedCategory != 'Semua') count++;
+    if (selectedPowerSource != 'Semua') count++;
+    if (sortBy != 'Populer') count++;
+    return count;
+  }
+
+  void resetFilters() {
+    _searchQuery = '';
+    _selectedCommodity = 'Semua';
+    _selectedProcessStage = 'Semua';
+    _selectedMachineType = 'Semua';
+    _selectedCapacityScale = 'Semua';
+    _selectedCategory = 'Semua';
+    _selectedPowerSource = 'Semua';
+    _sortBy = 'Populer';
+    notifyListeners();
+  }
+
   List<ProductModel> get filteredProducts {
-    return _products.where((prod) {
-      final matchesSearch = prod.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          prod.category.toLowerCase().contains(_searchQuery.toLowerCase());
+    final query = searchQuery.toLowerCase().trim();
+    final curCommodity = selectedCommodity;
+    final curStage = selectedProcessStage;
+    final curMachineType = selectedMachineType;
+    final curCapacityScale = selectedCapacityScale;
+    final curCategory = selectedCategory;
+    final curPower = selectedPowerSource;
+    final curSort = sortBy;
 
-      final matchesCategory =
-          _selectedCategory == 'Semua' || prod.category == _selectedCategory;
+    final list = products.where((prod) {
+      final matchesSearch = query.isEmpty ||
+          prod.name.toLowerCase().contains(query) ||
+          prod.commodity.toLowerCase().contains(query) ||
+          prod.processStage.toLowerCase().contains(query) ||
+          prod.machineType.toLowerCase().contains(query) ||
+          (prod.modelName != null && prod.modelName!.toLowerCase().contains(query)) ||
+          prod.category.toLowerCase().contains(query) ||
+          prod.specifications.tipe.toLowerCase().contains(query) ||
+          prod.specifications.kapasitas.toLowerCase().contains(query) ||
+          prod.specifications.sumberListrik.toLowerCase().contains(query) ||
+          prod.description.toLowerCase().contains(query) ||
+          prod.capacityModels.any((m) =>
+              m.modelName.toLowerCase().contains(query) ||
+              m.shortLabel.toLowerCase().contains(query) ||
+              m.capacity.toLowerCase().contains(query));
 
-      final matchesPower = _selectedPowerSource == 'Semua' ||
-          prod.specifications.sumberListrik.contains(_selectedPowerSource);
+      final matchesCommodity = curCommodity == 'Semua' ||
+          prod.commodity.toLowerCase() == curCommodity.toLowerCase();
 
-      return matchesSearch && matchesCategory && matchesPower;
+      final matchesStage = curStage == 'Semua' ||
+          prod.processStage.toLowerCase() == curStage.toLowerCase();
+
+      final matchesMachineType = curMachineType == 'Semua' ||
+          prod.machineType.toLowerCase() == curMachineType.toLowerCase();
+
+      final matchesCapacityScale = curCapacityScale == 'Semua' ||
+          prod.capacityScale == curCapacityScale ||
+          prod.capacityModels.any((m) => m.scale == curCapacityScale);
+
+      final matchesCategory = curCategory == 'Semua' ||
+          prod.category.toLowerCase() == curCategory.toLowerCase();
+
+      final matchesPower = curPower == 'Semua' ||
+          prod.specifications.sumberListrik
+              .toLowerCase()
+              .contains(curPower.toLowerCase());
+
+      return matchesSearch &&
+          matchesCommodity &&
+          matchesStage &&
+          matchesMachineType &&
+          matchesCapacityScale &&
+          matchesCategory &&
+          matchesPower;
     }).toList();
+
+    if (curSort == 'Harga Terendah') {
+      list.sort((a, b) => a.price.compareTo(b.price));
+    } else if (curSort == 'Harga Tertinggi') {
+      list.sort((a, b) => b.price.compareTo(a.price));
+    } else if (curSort == 'Rating') {
+      list.sort((a, b) => b.rating.compareTo(a.rating));
+    }
+    return list;
   }
 
   // Product CRUD for Admin
   void addProduct(ProductModel product) {
-    _products.insert(0, product);
+    products.insert(0, product);
     addNotification('Produk Baru', 'Produk "${product.name}" berhasil ditambahkan ke katalog.');
     notifyListeners();
   }
 
   void updateProduct(ProductModel updatedProduct) {
-    final index = _products.indexWhere((p) => p.id == updatedProduct.id);
+    final index = products.indexWhere((p) => p.id == updatedProduct.id);
     if (index != -1) {
-      _products[index] = updatedProduct;
+      products[index] = updatedProduct;
       addNotification('Produk Diperbarui', 'Data produk "${updatedProduct.name}" telah disimpan.');
       notifyListeners();
     }
   }
 
   void deleteProduct(String id) {
-    final prod = _products.firstWhere((p) => p.id == id);
-    _products.removeWhere((p) => p.id == id);
+    final prod = products.firstWhere((p) => p.id == id, orElse: () => products.first);
+    products.removeWhere((p) => p.id == id);
     addNotification('Produk Dihapus', 'Produk "${prod.name}" telah dihapus dari sistem.');
     notifyListeners();
   }

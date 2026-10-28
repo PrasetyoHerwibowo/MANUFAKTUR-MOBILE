@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../core/theme/app_colors.dart';
 import '../../widgets/app_notification_sheet.dart';
+import '../../widgets/product_filter_bottom_sheet.dart';
 import 'home/home_screen.dart';
-import 'catalog/category_screen.dart';
 import 'order/order_tracking_screen.dart';
 import 'service/booking_service_screen.dart';
 import 'profile/profile_screen.dart';
@@ -22,25 +22,12 @@ class _UserMainLayoutState extends State<UserMainLayout> {
   int _currentIndex = 0;
   final TextEditingController _searchController = TextEditingController();
 
-  late final List<Widget> _pages;
-
-  @override
-  void initState() {
-    super.initState();
-    _pages = [
-      HomeScreen(
-        onNavigateToCatalog: () {
-          setState(() {
-            _currentIndex = 1;
-          });
-        },
-      ),
-      const CategoryScreen(),
-      const OrderTrackingScreen(),
-      const BookingServiceScreen(),
-      const ProfileScreen(),
-    ];
-  }
+  List<Widget> get _pages => const [
+    HomeScreen(),
+    OrderTrackingScreen(),
+    BookingServiceScreen(),
+    ProfileScreen(),
+  ];
 
   @override
   void dispose() {
@@ -53,6 +40,14 @@ class _UserMainLayoutState extends State<UserMainLayout> {
     final appState = Provider.of<AppState>(context);
     final isDark = appState.isDarkMode;
     final unreadCount = appState.unreadNotificationsCount;
+
+    // Keep search controller in sync with appState
+    if (_searchController.text != appState.searchQuery) {
+      _searchController.value = TextEditingValue(
+        text: appState.searchQuery,
+        selection: TextSelection.collapsed(offset: appState.searchQuery.length),
+      );
+    }
 
     return Scaffold(
       appBar: _buildAppBar(context, appState, isDark, unreadCount),
@@ -77,7 +72,7 @@ class _UserMainLayoutState extends State<UserMainLayout> {
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) {
-            if (index == 4) {
+            if (index == 3) {
               // Profil sementara mengarah ke halaman login sesuai permintaan user
               Navigator.push(
                 context,
@@ -107,11 +102,6 @@ class _UserMainLayoutState extends State<UserMainLayout> {
               icon: Icon(Icons.home_outlined),
               activeIcon: Icon(Icons.home_rounded),
               label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_outlined),
-              activeIcon: Icon(Icons.grid_view_rounded),
-              label: 'Katalog',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.local_shipping_outlined),
@@ -195,6 +185,48 @@ class _UserMainLayoutState extends State<UserMainLayout> {
           ),
         ),
         actions: [
+          // Filter Button with Active Badge
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.tune_rounded,
+                  color: appState.hasActiveFilters
+                      ? AppColors.secondary
+                      : (isDark ? Colors.white70 : AppColors.textSecondary),
+                  size: 20,
+                ),
+                tooltip: "Filter & Urutkan",
+                onPressed: () {
+                  ProductFilterBottomSheet.show(context);
+                },
+              ),
+              if (appState.activeFiltersCount > 0)
+                Positioned(
+                  top: 9,
+                  right: 9,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: const BoxDecoration(
+                      color: AppColors.secondary,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
+                    child: Text(
+                      '${appState.activeFiltersCount}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+
           // Theme Toggle (Moon / Sun)
           IconButton(
             icon: Icon(
@@ -269,8 +301,7 @@ class _UserMainLayoutState extends State<UserMainLayout> {
       // Clean header for secondary tabs
       final titles = [
         "Beranda",
-        "Katalog Mesin",
-        "Pesanan & Status PO",
+        "Pesanan Saya (Tracking & PO)",
         "Layanan Servis & Garansi",
         "Profil Perusahaan",
       ];
