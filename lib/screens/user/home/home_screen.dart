@@ -6,7 +6,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../providers/app_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/product_model.dart';
-import '../../../widgets/product_filter_bottom_sheet.dart';
 import '../catalog/product_detail_screen.dart';
 import '../order/rfq_custom_order_screen.dart';
 import '../info/contact_whatsapp_screen.dart';
@@ -30,25 +29,19 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Map<String, dynamic>> _commodities = [
     {
       'id': 'Semua',
-      'label': 'Semua Mesin',
+      'title': 'Semua Mesin',
       'icon': Icons.apps_rounded,
     },
     {
       'id': 'Kopi',
-      'label': 'Kopi (Hulu-Hilir)',
+      'title': 'Mesin Kopi',
       'icon': Icons.coffee_rounded,
     },
     {
       'id': 'Kakao',
-      'label': 'Kakao (Hulu-Hilir)',
+      'title': 'Mesin Kakao',
       'icon': Icons.spa_rounded,
     },
-  ];
-
-  final List<Map<String, String>> _processStages = [
-    {'id': 'Semua', 'label': 'Semua Alur'},
-    {'id': 'Hulu', 'label': 'Hulu (Pasca Panen)'},
-    {'id': 'Hilir', 'label': 'Hilir (Pengolahan)'},
   ];
 
   @override
@@ -95,6 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   @override
+  @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final isDark = appState.isDarkMode;
@@ -106,24 +100,19 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 6),
-
-          // 1. Interactive Commodity & Process Stage Selector
-          _buildCategorySelector(appState, isDark),
-
           const SizedBox(height: 10),
 
-          // 2. Promotional Banner Carousel (PageView with Animated Indicator)
+          // 1. Promotional Banner Carousel
           _buildBannerCarousel(context, isDark),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
 
-          // 3. Trust Badges / Value Propositions (Like Reference 3-Pill Strip)
-          _buildTrustBadges(isDark),
+          // 2. Category Selector (Horizontal Pills)
+          _buildCategorySelector(appState, isDark),
 
           const SizedBox(height: 16),
 
-          // 4. Section Header: Title, Filters & Controls
+          // 4. Section Header: Title & Count
           _buildSectionHeader(context, appState, isDark, filteredProducts.length),
 
           const SizedBox(height: 10),
@@ -145,189 +134,111 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ================= 1. COMMODITY & PROCESS STAGE SELECTOR =================
+  // ================= 1. COMMODITY SELECTOR (3 KATEGORI UTAMA) =================
   Widget _buildCategorySelector(AppState appState, bool isDark) {
-    return Padding(
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: [
-          // Row 1: 3-Way Commodity Tabs (Semua / Kopi Hulu-Hilir / Kakao Hulu-Hilir)
-          Row(
-            children: _commodities.map((item) {
-              final isSelected = appState.selectedCommodity == item['id'];
-              final isCoffee = item['id'] == 'Kopi';
-              final isCocoa = item['id'] == 'Kakao';
+      child: Row(
+        children: _commodities.map((item) {
+          final id = item['id']?.toString() ?? 'Semua';
+          final label = item['title'].toString();
+          final isSelected = appState.selectedCommodity == item['id'];
+          final isCoffee = id == 'Kopi';
+          final isCocoa = id == 'Kakao';
 
-              Color activeBg;
-              Color activeBorder;
-              Color activeColor;
+          Color activeBg;
+          Color activeBorder;
+          Color activeColor;
 
-              if (isCoffee) {
-                activeBg = isDark ? const Color(0xFF382314) : const Color(0xFFFEF3C7);
-                activeBorder = AppColors.brandCoffee;
-                activeColor = AppColors.brandCoffee;
-              } else if (isCocoa) {
-                activeBg = isDark ? const Color(0xFF2C1608) : const Color(0xFFFFEDD5);
-                activeBorder = AppColors.brandCocoa;
-                activeColor = AppColors.brandCocoa;
-              } else {
-                activeBg = isDark ? const Color(0xFF2E1215) : const Color(0xFFFEF2F2);
-                activeBorder = AppColors.secondary;
-                activeColor = AppColors.secondary;
-              }
+          if (isCoffee) {
+            activeBg = isDark ? const Color(0xFF382314) : const Color(0xFFFEF3C7);
+            activeBorder = AppColors.brandCoffee;
+            activeColor = AppColors.brandCoffee;
+          } else if (isCocoa) {
+            activeBg = isDark ? const Color(0xFF2C1608) : const Color(0xFFFFEDD5);
+            activeBorder = AppColors.brandCocoa;
+            activeColor = AppColors.brandCocoa;
+          } else {
+            activeBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
+            activeBorder = AppColors.secondary;
+            activeColor = AppColors.secondary;
+          }
 
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2.5),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        final id = item['id']?.toString() ?? 'Semua';
-                        appState.setCommodityFilter(id);
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeInOut,
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? activeBg
-                              : (isDark ? const Color(0xFF141C28) : Colors.white),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isSelected
-                                ? activeBorder
-                                : (isDark
-                                    ? Colors.white.withValues(alpha: 0.08)
-                                    : const Color(0xFFE2E8F0)),
-                            width: isSelected ? 1.5 : 1,
-                          ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: activeBorder.withValues(alpha: 0.22),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  )
-                                ]
-                              : [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.03),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              (item['icon'] as IconData?) ?? Icons.category_rounded,
-                              size: 20,
-                              color: isSelected
-                                  ? activeColor
-                                  : (isDark ? Colors.white70 : AppColors.textSecondary),
-                            ),
-                            const SizedBox(height: 4),
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                item['label']?.toString() ?? '',
-                                maxLines: 1,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 10.5,
-                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                                  color: isSelected
-                                      ? activeColor
-                                      : (isDark
-                                          ? AppColors.darkTextSecondary
-                                          : AppColors.textSecondary),
-                                ),
-                              ),
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  appState.setCommodityFilter(id);
+                  appState.setProcessStageFilter('Semua');
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? activeBg
+                        : (isDark ? const Color(0xFF141C28) : Colors.white),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? activeBorder
+                          : (isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : const Color(0xFFE2E8F0)),
+                      width: isSelected ? 1.5 : 1,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: activeBorder.withValues(alpha: 0.22),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            )
+                          ]
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.03),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
                             ),
                           ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        (item['icon'] as IconData?) ?? Icons.category_rounded,
+                        size: 18,
+                        color: isSelected
+                            ? activeColor
+                            : (isDark ? Colors.white70 : AppColors.textSecondary),
+                      ),
+                      const SizedBox(width: 7),
+                      Text(
+                        label,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11.5,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                          color: isSelected
+                              ? activeColor
+                              : (isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.textSecondary),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Row 2: Alur Proses Filter Chips (Hulu vs Hilir)
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: _processStages.map((stage) {
-                final stageId = stage['id'] ?? 'Semua';
-                final isSelected = appState.selectedProcessStage == stageId;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: InkWell(
-                    onTap: () {
-                      appState.setProcessStageFilter(stageId);
-                    },
-                    borderRadius: BorderRadius.circular(20),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? (isDark
-                                ? AppColors.secondary.withValues(alpha: 0.25)
-                                : AppColors.secondary.withValues(alpha: 0.12))
-                            : (isDark
-                                ? AppColors.darkSurface
-                                : const Color(0xFFF1F5F9)),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppColors.secondary
-                              : (isDark ? Colors.white12 : AppColors.border),
-                          width: isSelected ? 1.2 : 0.8,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            stageId == 'Hulu'
-                                ? Icons.grass_rounded
-                                : (stageId == 'Hilir'
-                                    ? Icons.inventory_2_rounded
-                                    : Icons.linear_scale_rounded),
-                            size: 13,
-                            color: isSelected
-                                ? AppColors.secondary
-                                : (isDark ? Colors.white60 : AppColors.textMuted),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            stage['label'] ?? '',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 10.5,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                              color: isSelected
-                                  ? AppColors.secondary
-                                  : (isDark ? Colors.white70 : AppColors.textSecondary),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
+              ),
             ),
-          ),
-        ],
+          );
+        }).toList(),
       ),
     ).animate().fadeIn(duration: 250.ms);
   }
@@ -574,506 +485,39 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ================= 3. TRUST / VALUE PROPOSITIONS =================
-  Widget _buildTrustBadges(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCardBg : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isDark ? Colors.white10 : AppColors.border,
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: _buildTrustItem(
-                icon: Icons.shield_outlined,
-                iconColor: AppColors.secondary,
-                title: "Garansi 2 Thn",
-                desc: "Pabrik Resmi",
-                isDark: isDark,
-              ),
-            ),
-            Container(
-              height: 24,
-              width: 1,
-              color: isDark ? Colors.white12 : AppColors.border,
-            ),
-            Expanded(
-              child: _buildTrustItem(
-                icon: Icons.payments_outlined,
-                iconColor: AppColors.brandCoffee,
-                title: "Sistem DP 50%",
-                desc: "Pelunasan QC",
-                isDark: isDark,
-              ),
-            ),
-            Container(
-              height: 24,
-              width: 1,
-              color: isDark ? Colors.white12 : AppColors.border,
-            ),
-            Expanded(
-              child: _buildTrustItem(
-                icon: Icons.engineering_outlined,
-                iconColor: AppColors.info,
-                title: "After-Sales",
-                desc: "Teknisi Siap",
-                isDark: isDark,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTrustItem({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String desc,
-    required bool isDark,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: iconColor),
-          const SizedBox(width: 5),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                Text(
-                  desc,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 8.5,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ================= 4. SECTION HEADER & CATALOG FILTER CONTROLS =================
+  // ================= 4. SECTION HEADER =================
   Widget _buildSectionHeader(
       BuildContext context, AppState appState, bool isDark, int count) {
-    String headerTitle = "Katalog Mesin Industri";
+    String headerTitle = "Katalog Seluruh Mesin";
     if (appState.searchQuery.isNotEmpty) {
-      headerTitle = 'Hasil Cari: "${appState.searchQuery}"';
+      headerTitle = 'Pencarian: "${appState.searchQuery}"';
     } else if (appState.selectedCommodity == 'Kopi') {
-      headerTitle = appState.selectedProcessStage == 'Semua'
-          ? "Mesin Pengolahan Kopi (Hulu-Hilir)"
-          : "Mesin Kopi • Alur ${appState.selectedProcessStage}";
+      headerTitle = "Katalog Mesin Kopi";
     } else if (appState.selectedCommodity == 'Kakao') {
-      headerTitle = appState.selectedProcessStage == 'Semua'
-          ? "Mesin Pengolahan Kakao (Hulu-Hilir)"
-          : "Mesin Kakao • Alur ${appState.selectedProcessStage}";
-    } else if (appState.selectedProcessStage != 'Semua') {
-      headerTitle = "Mesin Industri • Alur ${appState.selectedProcessStage}";
+      headerTitle = "Katalog Mesin Kakao";
     }
 
-    final isKakao = appState.selectedCommodity == 'Kakao';
-    final isCoffee = appState.selectedCommodity == 'Kopi';
-
-    return Container(
+    return Padding(
       key: _catalogSectionKey,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section Title
-          Row(
-            children: [
-              Container(
-                width: 3.5,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: isCoffee
-                      ? AppColors.brandCoffee
-                      : (isKakao ? AppColors.brandCocoa : AppColors.secondary),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  headerTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.outfit(
-                    fontSize: 16.5,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              InkWell(
-                onTap: () {
-                  ProductFilterBottomSheet.show(context);
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: appState.activeFiltersCount > 0
-                        ? AppColors.secondary.withValues(alpha: 0.12)
-                        : (isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9)),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: appState.activeFiltersCount > 0
-                          ? AppColors.secondary
-                          : (isDark ? Colors.white12 : AppColors.border),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.tune_rounded,
-                        size: 14,
-                        color: appState.activeFiltersCount > 0
-                            ? AppColors.secondary
-                            : (isDark ? Colors.white70 : AppColors.textSecondary),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        appState.activeFiltersCount > 0
-                            ? "Filter (${appState.activeFiltersCount})"
-                            : "Filter",
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: appState.activeFiltersCount > 0
-                              ? AppColors.secondary
-                              : (isDark ? Colors.white70 : AppColors.textSecondary),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 10),
-
-          // Horizontal Filter Dropdowns Row
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: [
-                // 1. Dropdown Komoditas (if Semua)
-                if (appState.selectedCommodity == 'Semua')
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: _buildFilterDropdown(
-                      label: "Komoditas",
-                      value: appState.selectedCommodity,
-                      items: appState.availableCommodities,
-                      onChanged: (val) {
-                        if (val != null) appState.setCommodityFilter(val);
-                      },
-                      isDark: isDark,
-                    ),
-                  ),
-
-                // 2. Dropdown Nama Mesin (Khusus Kakao: Nama Mesin Kakao; Kopi: Nama Mesin Kopi; Semua: Nama Mesin)
-                _buildFilterDropdown(
-                  label: isKakao ? "Mesin Kakao" : (isCoffee ? "Mesin Kopi" : "Nama Mesin"),
-                  value: appState.selectedMachineType,
-                  items: appState.availableMachineTypes,
-                  onChanged: (val) {
-                    if (val != null) appState.setMachineTypeFilter(val);
-                  },
-                  isDark: isDark,
-                ),
-                const SizedBox(width: 8),
-
-                // 3. Dropdown Model Kapasitas (HANYA MUNCUL JIKA BUKAN KAKAO, SESUAI PERMINTAAN USER!)
-                if (!isKakao) ...[
-                  _buildFilterDropdown(
-                    label: "Model Kapasitas",
-                    value: appState.selectedCapacityScale,
-                    items: appState.availableCapacityScales,
-                    onChanged: (val) {
-                      if (val != null) appState.setCapacityScaleFilter(val);
-                    },
-                    isDark: isDark,
-                  ),
-                  const SizedBox(width: 8),
-                ],
-
-                // 4. Dropdown Listrik
-                _buildFilterDropdown(
-                  label: "Listrik",
-                  value: appState.selectedPowerSource,
-                  items: const [
-                    'Semua',
-                    '220V 1-Phase',
-                    '380V 3-Phase',
-                    'Gas LPG',
-                  ],
-                  onChanged: (val) {
-                    if (val != null) appState.setPowerSourceFilter(val);
-                  },
-                  isDark: isDark,
-                ),
-                const SizedBox(width: 8),
-
-                // 5. Dropdown Urutan
-                _buildFilterDropdown(
-                  label: "Urutan",
-                  value: appState.sortBy,
-                  items: const [
-                    'Populer',
-                    'Harga Terendah',
-                    'Harga Tertinggi',
-                    'Rating',
-                  ],
-                  onChanged: (val) {
-                    if (val != null) appState.setSortBy(val);
-                  },
-                  isDark: isDark,
-                ),
-              ],
-            ),
-          ),
-
-          // Active filter tags (if any active)
-          if (appState.hasActiveFilters) ...[
-            const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              child: Row(
-                children: [
-                  if (appState.searchQuery.isNotEmpty)
-                    _buildActiveFilterChip(
-                      label: 'Cari: "${appState.searchQuery}"',
-                      onDelete: () => appState.setSearchQuery(''),
-                      isDark: isDark,
-                    ),
-                  if (appState.selectedCommodity != 'Semua')
-                    _buildActiveFilterChip(
-                      label: 'Komoditas: ${appState.selectedCommodity}',
-                      onDelete: () => appState.setCommodityFilter('Semua'),
-                      isDark: isDark,
-                    ),
-                  if (appState.selectedProcessStage != 'Semua')
-                    _buildActiveFilterChip(
-                      label: 'Alur: ${appState.selectedProcessStage}',
-                      onDelete: () => appState.setProcessStageFilter('Semua'),
-                      isDark: isDark,
-                    ),
-                  if (appState.selectedMachineType != 'Semua')
-                    _buildActiveFilterChip(
-                      label: 'Mesin: ${appState.selectedMachineType}',
-                      onDelete: () => appState.setMachineTypeFilter('Semua'),
-                      isDark: isDark,
-                    ),
-                  if (appState.selectedCapacityScale != 'Semua')
-                    _buildActiveFilterChip(
-                      label: 'Model: ${appState.selectedCapacityScale}',
-                      onDelete: () => appState.setCapacityScaleFilter('Semua'),
-                      isDark: isDark,
-                    ),
-                  if (appState.selectedPowerSource != 'Semua')
-                    _buildActiveFilterChip(
-                      label: 'Listrik: ${appState.selectedPowerSource}',
-                      onDelete: () => appState.setPowerSourceFilter('Semua'),
-                      isDark: isDark,
-                    ),
-                  if (appState.sortBy != 'Populer')
-                    _buildActiveFilterChip(
-                      label: 'Urutan: ${appState.sortBy}',
-                      onDelete: () => appState.setSortBy('Populer'),
-                      isDark: isDark,
-                    ),
-                  InkWell(
-                    onTap: () => appState.resetFilters(),
-                    borderRadius: BorderRadius.circular(6),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                      child: Text(
-                        "Reset Semua",
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.secondary,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 10),
-
-          // Count & Sort subtitle
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                isKakao
-                    ? "Menampilkan $count Mesin Kakao"
-                    : (isCoffee
-                        ? "Menampilkan $count Mesin Kopi"
-                        : "Menampilkan $count Mesin Pengolahan"),
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                ),
-              ),
-              InkWell(
-                onTap: () {
-                  ProductFilterBottomSheet.show(context);
-                },
-                child: Row(
-                  children: [
-                    const Icon(Icons.swap_vert, size: 14, color: AppColors.textMuted),
-                    const SizedBox(width: 2),
-                    Text(
-                      "Urutan: ${appState.sortBy}",
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11.5,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterDropdown({
-    required String label,
-    required String value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-    required bool isDark,
-  }) {
-    final safeItems = items.isEmpty ? const ['Semua'] : items;
-    final safeValue = safeItems.contains(value) ? value : safeItems.first;
-    final isFiltered = safeValue != 'Semua' && safeValue != 'Populer';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCardBg : const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isFiltered
-              ? AppColors.secondary
-              : (isDark ? Colors.white12 : AppColors.border),
-          width: isFiltered ? 1.2 : 1,
-        ),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: safeValue,
-          isDense: true,
-          dropdownColor: isDark ? AppColors.darkSurface : Colors.white,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16),
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 11,
-            fontWeight: isFiltered ? FontWeight.bold : FontWeight.w500,
-            color: isFiltered
-                ? AppColors.secondary
-                : (isDark ? Colors.white : AppColors.textPrimary),
-          ),
-          items: safeItems.map((item) {
-            return DropdownMenuItem<String>(
-              value: item,
-              child: Text(
-                "$label: $item",
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  color: isDark ? Colors.white : AppColors.textPrimary,
-                ),
-              ),
-            );
-          }).toList(),
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActiveFilterChip({
-    required String label,
-    required VoidCallback onDelete,
-    required bool isDark,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(right: 6),
-      padding: const EdgeInsets.only(left: 8, right: 4, top: 3, bottom: 3),
-      decoration: BoxDecoration(
-        color: AppColors.secondary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.secondary.withValues(alpha: 0.3),
-        ),
-      ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.secondary,
+            headerTitle,
+            style: GoogleFonts.outfit(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
             ),
           ),
-          const SizedBox(width: 2),
-          InkWell(
-            onTap: onDelete,
-            child: const Icon(
-              Icons.close_rounded,
-              size: 14,
-              color: AppColors.secondary,
+          Text(
+            "$count Produk",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
             ),
           ),
         ],
@@ -1094,7 +538,7 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisCount: 2,
           crossAxisSpacing: 12,
           mainAxisSpacing: 14,
-          childAspectRatio: 0.58,
+          childAspectRatio: 0.65,
         ),
         itemBuilder: (context, index) {
           final product = products[index];
@@ -1137,83 +581,49 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Clean Machinery Image with Commodity & Stage Badge Tag
+            // Clean Machine Image (No cluttering micro-badge!)
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
               child: AspectRatio(
                 aspectRatio: 1.25,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.network(
-                      product.imageUrl,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
-                          child: const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.secondary,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
-                        child: Center(
-                          child: Icon(
-                            isCoffee ? Icons.coffee_rounded : Icons.spa_rounded,
-                            color: isCoffee ? AppColors.brandCoffee : AppColors.brandCocoa,
-                            size: 34,
+                child: Image.network(
+                  product.imageUrl,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
+                      child: const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.secondary,
                           ),
                         ),
                       ),
-                    ),
-                    // Micro badge on top-left of photo
-                    Positioned(
-                      top: 7,
-                      left: 7,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                        decoration: BoxDecoration(
-                          color: isCoffee
-                              ? const Color(0xFF78350F).withValues(alpha: 0.90)
-                              : const Color(0xFF451A03).withValues(alpha: 0.90),
-                          borderRadius: BorderRadius.circular(6),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          "${product.commodity.toUpperCase()} • ${product.processStage.toUpperCase()}",
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 7.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
+                    child: Center(
+                      child: Icon(
+                        isCoffee ? Icons.coffee_rounded : Icons.spa_rounded,
+                        color: isCoffee ? AppColors.brandCoffee : AppColors.brandCocoa,
+                        size: 34,
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
 
-            // Card Body Content
+            // Card Body Content (Clean & Focused)
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(9),
+                padding: const EdgeInsets.all(10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1221,46 +631,29 @@ class _HomeScreenState extends State<HomeScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Machine Type Micro Tag
-                        Text(
-                          product.machineType.isNotEmpty
-                              ? product.machineType.toUpperCase()
-                              : product.category.toUpperCase(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 8.5,
-                            fontWeight: FontWeight.w700,
-                            color: isCoffee ? AppColors.brandCoffee : AppColors.brandCocoa,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-
                         // Machine Name
                         Text(
                           product.name,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.outfit(
-                            fontSize: 12.5,
+                            fontSize: 13,
                             fontWeight: FontWeight.bold,
                             height: 1.25,
                             color: isDark ? Colors.white : AppColors.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 6),
 
                         // Capacity / Multi-Model Indicator
                         if (hasMultipleModels)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                            margin: const EdgeInsets.only(bottom: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                             decoration: BoxDecoration(
                               color: isDark
                                   ? AppColors.brandCoffeeDark.withValues(alpha: 0.4)
                                   : const Color(0xFFFEF3C7),
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(5),
                               border: Border.all(
                                 color: isDark
                                     ? AppColors.brandCoffee.withValues(alpha: 0.3)
@@ -1273,17 +666,17 @@ class _HomeScreenState extends State<HomeScreen> {
                               children: [
                                 const Icon(
                                   Icons.layers_rounded,
-                                  size: 9.5,
+                                  size: 10,
                                   color: AppColors.brandCoffee,
                                 ),
-                                const SizedBox(width: 3),
+                                const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
                                     "${product.capacityModels.length} Model Kapasitas",
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 8.5,
+                                      fontSize: 9,
                                       fontWeight: FontWeight.w700,
                                       color: isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E),
                                     ),
@@ -1294,13 +687,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           )
                         else
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                            margin: const EdgeInsets.only(bottom: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                             decoration: BoxDecoration(
                               color: isDark
                                   ? AppColors.darkSurface
                                   : const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(5),
                               border: Border.all(
                                 color: isDark ? Colors.white10 : AppColors.border,
                                 width: 0.6,
@@ -1311,17 +703,17 @@ class _HomeScreenState extends State<HomeScreen> {
                               children: [
                                 Icon(
                                   Icons.speed_rounded,
-                                  size: 9.5,
+                                  size: 10,
                                   color: isDark ? Colors.white60 : AppColors.textMuted,
                                 ),
-                                const SizedBox(width: 3),
+                                const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
                                     product.specifications.kapasitas,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 8.5,
+                                      fontSize: 9,
                                       fontWeight: FontWeight.w600,
                                       color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                                     ),
@@ -1330,32 +722,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
-
-                        // Power / Watt badge
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.flash_on_rounded,
-                              size: 10,
-                              color: AppColors.warning,
-                            ),
-                            const SizedBox(width: 2),
-                            Flexible(
-                              child: Text(
-                                product.specifications.dayaListrik,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDark
-                                      ? AppColors.darkTextSecondary
-                                      : AppColors.textMuted,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
 
@@ -1372,7 +738,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               Text(
                                 hasMultipleModels ? "Mulai dari" : "Harga PO",
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 8,
+                                  fontSize: 8.5,
                                   fontWeight: FontWeight.w500,
                                   color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
                                 ),
@@ -1384,7 +750,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.outfit(
-                                  fontSize: 12.5,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.bold,
                                   color: isDark ? Colors.white : AppColors.primary,
                                 ),
@@ -1393,17 +759,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         Container(
-                          width: 24,
-                          height: 24,
+                          width: 26,
+                          height: 26,
                           decoration: BoxDecoration(
                             color: isCoffee
                                 ? AppColors.brandCoffee
-                                : (isDark ? AppColors.secondary : AppColors.secondary),
-                            borderRadius: BorderRadius.circular(7),
+                                : AppColors.secondary,
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(
                             Icons.arrow_forward_rounded,
-                            size: 13,
+                            size: 14,
                             color: Colors.white,
                           ),
                         ),
