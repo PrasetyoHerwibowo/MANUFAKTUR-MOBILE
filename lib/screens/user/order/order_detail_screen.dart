@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../core/utils/file_picker_helper.dart';
-import 'package:timeline_tile/timeline_tile.dart';
 import '../../../providers/app_state.dart';
 import '../../../core/models/order_model.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../widgets/status_badge.dart';
 import '../../../widgets/pdf_preview_dialog.dart';
 
 import '../service/booking_service_screen.dart';
@@ -91,23 +89,29 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           color: appState.isDarkMode ? Colors.white : AppColors.primary,
                         ),
                       ),
-                      OrderStatusBadge(status: o.status),
+                      Text(
+                        o.orderDate,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: appState.isDarkMode ? AppColors.darkTextSecondary : AppColors.textMuted,
+                        ),
+                      ),
                     ],
                   ),
                   const Divider(height: 20),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildInfoColumn("Perusahaan", o.companyName),
-                      _buildInfoColumn("Tgl PO", o.orderDate),
+                      Expanded(child: _buildInfoColumn("Perusahaan", o.companyName)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildInfoColumn("Tgl PO", o.orderDate)),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildInfoColumn("Nomor Seri Mesin", o.serialNumber),
-                      _buildInfoColumn("Estimasi Selesai", o.estimatedCompletionDate),
+                      Expanded(child: _buildInfoColumn("Nomor Seri Mesin", o.serialNumber)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildInfoColumn("Estimasi Selesai", o.estimatedCompletionDate)),
                     ],
                   ),
                 ],
@@ -376,61 +380,112 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               const SizedBox(height: 20),
             ],
 
-            // 7-STAGE FULL PRODUCTION TIMELINE
-            _buildSectionTitle("Timeline Pelacakan Produksi & Manufaktur (7 Tahap)"),
+            // Informasi Pengiriman & Catatan Pabrik
+            _buildSectionTitle("Informasi Pengiriman & Spesifikasi"),
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: appState.isDarkMode ? AppColors.darkSurface : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: appState.isDarkMode ? Colors.white10 : AppColors.border),
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildTimelineTile(
-                    title: "1. Verifikasi DP 50%",
-                    subtitle: "DP Rp $dpFormatted telah terverifikasi oleh Finance.",
-                    isFirst: true,
-                    isDone: o.currentStageIndex >= 0,
-                    isActive: o.currentStageIndex == 0,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.local_shipping_outlined,
+                          color: Color(0xFF2563EB),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Alamat Pengiriman:",
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: appState.isDarkMode ? Colors.white70 : AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              o.deliveryAddress,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12.5,
+                                color: appState.isDarkMode ? Colors.white : AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  _buildTimelineTile(
-                    title: "2. Persiapan Bahan Baku & Sourcing",
-                    subtitle: "Pemesanan frame stainless steel 304, boiler & motor listrik.",
-                    isDone: o.currentStageIndex >= 1,
-                    isActive: o.currentStageIndex == 1,
+                  const SizedBox(height: 14),
+                  Divider(
+                    height: 1,
+                    color: appState.isDarkMode ? Colors.white10 : AppColors.border,
                   ),
-                  _buildTimelineTile(
-                    title: "3. Proses Produksi / Assembly",
-                    subtitle: "Pengelasan boiler, perakitan wiring PID & pompa rotari presisi.",
-                    isDone: o.currentStageIndex >= 2,
-                    isActive: o.currentStageIndex == 2,
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildInfoColumn(
+                          "Estimasi Pengiriman Pabrik",
+                          o.estimatedCompletionDate,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildInfoColumn(
+                          "Metode Logistik",
+                          "Kargo Khusus Pabrik",
+                        ),
+                      ),
+                    ],
                   ),
-                  _buildTimelineTile(
-                    title: "4. Quality Control (QC) & Pressure Test",
-                    subtitle: "Pengujian tekanan 100 Bar & kestabilan suhu extraction.",
-                    isDone: o.currentStageIndex >= 3,
-                    isActive: o.currentStageIndex == 3,
-                  ),
-                  _buildTimelineTile(
-                    title: "5. Menunggu Pelunasan Sisa 50%",
-                    subtitle: "Tagihan pelunasan $sisaFormatted terbit sebelum pengiriman.",
-                    isDone: o.currentStageIndex >= 4,
-                    isActive: o.currentStageIndex == 4,
-                  ),
-                  _buildTimelineTile(
-                    title: "6. Pengiriman & Instalasi Teknisi",
-                    subtitle: "Pengiriman kargo industri, pengantaran on-site & instalasi teknisi.",
-                    isDone: o.currentStageIndex >= 5,
-                    isActive: o.currentStageIndex == 5,
-                  ),
-                  _buildTimelineTile(
-                    title: "7. After-Sales Service (Layanan Purna Jual)",
-                    subtitle: "Unit beroperasi normal, garansi 2 tahun aktif & servis berkala.",
-                    isLast: true,
-                    isDone: o.currentStageIndex >= 6,
-                    isActive: o.currentStageIndex == 6,
-                  ),
+                  if (o.customNotes.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withValues(alpha: appState.isDarkMode ? 0.12 : 0.08),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.amber.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.note_alt_outlined, size: 16, color: Color(0xFFB45309)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              "Catatan Khusus: ${o.customNotes}",
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11.5,
+                                fontStyle: FontStyle.italic,
+                                color: appState.isDarkMode ? Colors.amber.shade200 : const Color(0xFFB45309),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -442,21 +497,34 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: appState.isDarkMode ? AppColors.darkSurface : Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: appState.isDarkMode ? Colors.white10 : AppColors.border),
               ),
               child: Column(
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(o.productName,
+                      Expanded(
+                        child: Text(
+                          o.productName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.bold)),
-                      Text("x${o.quantity} Unit",
-                          style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.bold)),
+                            fontWeight: FontWeight.bold,
+                            color: appState.isDarkMode ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        "x${o.quantity} Unit",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.bold,
+                          color: appState.isDarkMode ? Colors.white : AppColors.textPrimary,
+                        ),
+                      ),
                     ],
                   ),
                   const Divider(height: 20),
@@ -528,73 +596,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: GoogleFonts.plusJakartaSans(
-                fontSize: 10, color: AppColors.textMuted)),
-        Text(value,
-            style: GoogleFonts.plusJakartaSans(
-                fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 10,
+            color: AppColors.textMuted,
+          ),
+        ),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ],
-    );
-  }
-
-  Widget _buildTimelineTile({
-    required String title,
-    required String subtitle,
-    bool isFirst = false,
-    bool isLast = false,
-    bool isDone = false,
-    bool isActive = false,
-  }) {
-    return TimelineTile(
-      isFirst: isFirst,
-      isLast: isLast,
-      beforeLineStyle: LineStyle(
-        color: isDone ? AppColors.secondary : Colors.grey.shade300,
-        thickness: 3,
-      ),
-      indicatorStyle: IndicatorStyle(
-        width: 24,
-        height: 24,
-        indicator: Container(
-          decoration: BoxDecoration(
-            color: isDone
-                ? AppColors.secondary
-                : (isActive ? AppColors.warning : Colors.grey.shade300),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            isDone ? Icons.check : (isActive ? Icons.autorenew : Icons.circle),
-            color: Colors.white,
-            size: 14,
-          ),
-        ),
-      ),
-      endChild: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 0, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: GoogleFonts.plusJakartaSans(
-                fontWeight: isActive || isDone ? FontWeight.bold : FontWeight.w500,
-                fontSize: 13,
-                color: isActive
-                    ? AppColors.primary
-                    : (isDone ? AppColors.textPrimary : AppColors.textMuted),
-              ),
-            ),
-            Text(
-              subtitle,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

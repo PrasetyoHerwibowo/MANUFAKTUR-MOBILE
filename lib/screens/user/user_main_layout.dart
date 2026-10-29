@@ -258,7 +258,7 @@ class _UserMainLayoutState extends State<UserMainLayout> {
       // Clean header for secondary tabs
       final titles = [
         "Beranda",
-        "Pesanan Saya (Tracking & PO)",
+        "Pesanan Saya",
         "Layanan Servis & Garansi",
         "Profil Perusahaan",
       ];

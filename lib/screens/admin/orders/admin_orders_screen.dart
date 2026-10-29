@@ -64,26 +64,33 @@ class AdminOrdersScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                o.poNumber,
-                                style: GoogleFonts.outfit(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: AppColors.primary,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  o.poNumber,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: AppColors.primary,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                "${o.companyName} • ${o.orderDate}",
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
+                                Text(
+                                  "${o.companyName} • ${o.orderDate}",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           OrderStatusBadge(status: o.status),
                         ],
                       ),
@@ -91,10 +98,14 @@ class AdminOrdersScreen extends StatelessWidget {
 
                       Text(
                         "Item: ${o.productName} (x${o.quantity} Unit)",
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.plusJakartaSans(
                             fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                       Text("Total PO: $totalFormatted • DP 50%: $dpFormatted",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(
                               fontSize: 11, color: AppColors.textMuted)),
 

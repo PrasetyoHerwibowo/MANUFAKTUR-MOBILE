@@ -191,33 +191,40 @@ class PaymentHistoryScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                o.poNumber,
-                                style: GoogleFonts.outfit(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: appState.isDarkMode ? Colors.white : AppColors.primary,
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  o.poNumber,
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: appState.isDarkMode ? Colors.white : AppColors.primary,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              o.orderDate,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                color: AppColors.textMuted,
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  o.orderDate,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
 
                         // Action: Launch Invoice PDF
                         InkWell(
@@ -267,6 +274,8 @@ class PaymentHistoryScreen extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       o.productName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -275,6 +284,8 @@ class PaymentHistoryScreen extends StatelessWidget {
                     ),
                     Text(
                       "No Seri: ${o.serialNumber} • Rekening: BCA Corporate 088-2930-112",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         color: AppColors.textMuted,
