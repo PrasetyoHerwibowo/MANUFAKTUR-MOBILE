@@ -93,4 +93,36 @@ class ProductModel {
         _processStage = processStage ?? 'Hilir',
         _machineType = machineType ?? '',
         _capacityModels = capacityModels ?? const [];
+
+  factory ProductModel.fromJson(Map<String, dynamic> json) {
+    return ProductModel(
+      id: (json['id'] ?? '').toString(),
+      name: json['name'] ?? 'Mesin Manufaktur',
+      category: json['category'] ?? 'Mesin Industri',
+      commodity: json['commodity'] ?? 'Kopi',
+      processStage: json['process_stage'] ?? 'Hulu',
+      machineType: json['model_code'] ?? '',
+      modelName: json['model_code'],
+      price: (json['price'] is num) ? (json['price'] as num).toDouble() : 50000000.0,
+      rating: (json['rating'] is num) ? (json['rating'] as num).toDouble() : 4.9,
+      reviewsCount: 18,
+      imageUrl: json['image_url'] ?? 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&auto=format&fit=crop&q=80',
+      description: json['description'] ?? json['function'] ?? '',
+      specifications: TechnicalSpec(
+        tipe: json['model_code'] ?? 'Industri',
+        kapasitas: json['capacity'] ?? 'Standar Produksi',
+        sumberListrik: '220V / 380V 3-Phase',
+        dayaListrik: json['power'] ?? 'Sesuai Standar',
+        dimensi: json['dimension'] ?? 'Sesuai Spesifikasi',
+        berat: json['weight'] ?? 'Sesuai Spesifikasi',
+        materialBoiler: 'Stainless Steel 304 Food Grade',
+        kapasitasBoiler: 'Tungku / Silinder Khusus',
+      ),
+      manualBookPdfName: 'Brosur_${json['model_code'] ?? 'MDI'}.pdf',
+      videoReviewTitle: 'Uji Fungsi & Demo ${json['name'] ?? ''}',
+      videoReviewDuration: '04:15',
+      isCustomizable: true,
+      stockStatus: 'Pre-Order 14 Hari',
+    );
+  }
 }

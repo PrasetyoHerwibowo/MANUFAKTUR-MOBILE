@@ -7,7 +7,6 @@ import '../core/models/sparepart_model.dart';
 import '../core/constants/mock_data.dart';
 import '../core/services/api_service.dart';
 
-
 enum AppMode { user, admin }
 
 class AppNotification {
@@ -27,6 +26,10 @@ class AppNotification {
 }
 
 class AppState extends ChangeNotifier {
+  AppState() {
+    loadProductsFromBackend();
+  }
+
   // App Mode (User Client vs Admin Dashboard)
   AppMode _appMode = AppMode.user;
   AppMode get appMode => _appMode;
@@ -51,116 +54,226 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Auth state
-  bool _isLoggedIn = true;
+  // ==========================================
+  // AUTH STATE & SANCTUM INTEGRATION
+  // Default is FALSE (harus register/login untuk Pesanan & Servis)
+  // ==========================================
+  bool _isLoggedIn = false;
   bool get isLoggedIn => _isLoggedIn;
 
-  String _authProvider = 'email'; // 'email', 'google', 'microsoft'
+  String _authProvider = 'email'; // 'email', 'google'
   String get authProvider => _authProvider;
-  bool get isSsoUser => _authProvider == 'google' || _authProvider == 'microsoft';
+  bool get isSsoUser => _authProvider == 'google';
 
-  String _userName = 'Budi Santoso';
+  String _userName = '';
   String get userName => _userName;
 
-  String _companyName = 'PT Manufactur Dynamic Indonesia';
+  String _companyName = '';
   String get companyName => _companyName;
 
-  String _userEmail = 'procurement@kopinusantara.co.id';
+  String _userEmail = '';
   String get userEmail => _userEmail;
 
-  String _userPhone = '0812-9876-5432';
+  String _userPhone = '';
   String get userPhone => _userPhone;
 
-  void login(String email, String password, String company, {String name = 'Mitra Manufaktur'}) {
-    _isLoggedIn = true;
-    _authProvider = 'email';
-    _userEmail = email;
-    _userName = name;
-    _companyName = company.isNotEmpty ? company : 'PT Manufactur Dynamic Indonesia';
-    addNotification(
-      'Login Berhasil',
-      'Selamat datang kembali di E-Commerce Manufaktur Mesin, $_companyName!',
-    );
-    notifyListeners();
+  /// Login Akun (Memanggil Laravel Sanctum API)
+  Future<Map<String, dynamic>> login(String email, String password) async {
+    final res = await ApiService.login(email, password);
+
+    if (res['success'] == true) {
+      _isLoggedIn = true;
+      _authProvider = 'email';
+      _userEmail = res['user']?['email'] ?? email;
+      _userName = res['user']?['name'] ?? email.split('@').first;
+      _companyName = res['user']?['company'] ?? 'PT Manufactur Dynamic Indonesia';
+      _userPhone = res['user']?['phone'] ?? '';
+
+      addNotification(
+        'Login Berhasil',
+        'Selamat datang kembali di Aplikasi Manufaktur, $_userName!',
+      );
+      notifyListeners();
+    }
+    return res;
   }
 
-  Future<void> loginWithSSO({
-    required String provider,
+  /// Registrasi Akun Baru (Wajib email aktif -> kode 10 digit acak dikirim)
+  Future<Map<String, dynamic>> register({
     required String name,
     required String email,
-    required String company,
+    required String password,
+    String? company,
     String? phone,
   }) async {
-    _isLoggedIn = true;
-    _authProvider = provider.toLowerCase();
-    _userName = name;
-    _userEmail = email;
-    _companyName = company.isNotEmpty ? company : 'PT Manufactur Dynamic Indonesia';
-    if (phone != null && phone.isNotEmpty) {
-      _userPhone = phone;
-    }
-
-    // Call REST-API backend
-    ApiService.ssoAuth(
-      provider: _authProvider,
-      email: email,
+    return await ApiService.register(
       name: name,
+      email: email,
+      password: password,
       company: company,
       phone: phone,
     );
+  }
 
-    final providerDisplayName = provider.toLowerCase() == 'google' 
-        ? 'Google Workspace' 
-        : (provider.toLowerCase() == 'microsoft' ? 'Microsoft 365' : provider.toUpperCase());
+  /// Verifikasi Aktivasi Akun dengan 10 digit kode acak
+  Future<Map<String, dynamic>> verifyActivation({
+    required String email,
+    required String code,
+  }) async {
+    final res = await ApiService.verifyActivation(email: email, code: code);
 
-    addNotification(
-      'SSO Login Berhasil',
-      'Autentikasi aman melalui $providerDisplayName untuk akun korporat $email terverifikasi.',
+    if (res['success'] == true) {
+      _isLoggedIn = true;
+      _authProvider = 'email';
+      _userEmail = res['user']?['email'] ?? email;
+      _userName = res['user']?['name'] ?? email.split('@').first;
+      _companyName = res['user']?['company'] ?? 'PT Manufactur Dynamic Indonesia';
+      _userPhone = res['user']?['phone'] ?? '';
+
+      addNotification(
+        'Aktivasi Berhasil',
+        'Akun $_userName telah aktif dan siap melakukan pemesanan serta servis mesin.',
+      );
+      notifyListeners();
+    }
+    return res;
+  }
+
+  /// Kirim Ulang Kode Verifikasi
+  Future<Map<String, dynamic>> resendActivationCode(String email) async {
+    return await ApiService.resendActivationCode(email);
+  }
+
+  /// Lupa Password - Kirim 10 digit kode acak ke email
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    return await ApiService.forgotPassword(email);
+  }
+
+  /// Verifikasi 10 Digit Kode Reset Password
+  Future<Map<String, dynamic>> verifyResetCode({
+    required String email,
+    required String code,
+  }) async {
+    return await ApiService.verifyResetCode(email: email, code: code);
+  }
+
+  /// Ganti Password Baru dengan Kode 10 Digit
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+    required String passwordConfirmation,
+  }) async {
+    return await ApiService.resetPassword(
+      email: email,
+      code: code,
+      newPassword: newPassword,
+      passwordConfirmation: passwordConfirmation,
     );
-    notifyListeners();
   }
 
+  /// Login / Registrasi Google OAuth
+  Future<Map<String, dynamic>> loginWithGoogle({
+    required String email,
+    required String name,
+    String? googleId,
+    String? avatar,
+    String? phone,
+    String? company,
+  }) async {
+    final res = await ApiService.googleAuth(
+      email: email,
+      name: name,
+      googleId: googleId,
+      avatar: avatar,
+      phone: phone,
+      company: company,
+    );
+
+    if (res['success'] == true) {
+      _isLoggedIn = true;
+      _authProvider = 'google';
+      _userEmail = res['user']?['email'] ?? email;
+      _userName = res['user']?['name'] ?? name;
+      _companyName = res['user']?['company'] ?? 'Mitra $name';
+      _userPhone = res['user']?['phone'] ?? (phone ?? '');
+
+      addNotification(
+        'Google Sign-In Berhasil',
+        'Autentikasi akun Google terverifikasi. Selamat datang, $_userName!',
+      );
+      notifyListeners();
+    }
+    return res;
+  }
+
+  /// Logout Akun
   void logout() {
+    ApiService.logout();
     _isLoggedIn = false;
+    _authProvider = 'email';
+    _userName = '';
+    _userEmail = '';
+    _companyName = '';
+    _userPhone = '';
+    addNotification('Logout Berhasil', 'Sesi Anda telah berhasil diakhiri.');
     notifyListeners();
   }
 
-  // Products
+  // ==========================================
+  // PRODUCTS / KATALOG MESIN DARI BACKEND
+  // ==========================================
   List<ProductModel>? _products;
+  bool _isLoadingProducts = false;
+  bool get isLoadingProducts => _isLoadingProducts;
+
   List<ProductModel> get products {
-    if (_products == null || _products!.isEmpty || _products!.length < MockData.initialProducts.length) {
-      _products = List<ProductModel>.from(MockData.initialProducts);
+    if (_products == null || _products!.isEmpty) {
+      return List<ProductModel>.from(MockData.initialProducts);
     }
     return _products!;
+  }
+
+  /// Memuat daftar mesin dari Laravel REST API
+  Future<void> loadProductsFromBackend() async {
+    _isLoadingProducts = true;
+    notifyListeners();
+
+    try {
+      final backendMachines = await ApiService.fetchMachines();
+      if (backendMachines != null && backendMachines.isNotEmpty) {
+        _products = backendMachines;
+      }
+    } catch (e) {
+      debugPrint('Fallback loading products: $e');
+    } finally {
+      _isLoadingProducts = false;
+      notifyListeners();
+    }
   }
 
   String? _searchQuery = '';
   String get searchQuery => _searchQuery ?? '';
 
-  // Commodity: 'Semua', 'Kopi', 'Kakao'
   String? _selectedCommodity = 'Semua';
   String get selectedCommodity => _selectedCommodity ?? 'Semua';
 
-  // Process Stage: 'Semua', 'Hulu', 'Hilir'
   String? _selectedProcessStage = 'Semua';
   String get selectedProcessStage => _selectedProcessStage ?? 'Semua';
 
-  // Specific Machine Type / Name
   String? _selectedMachineType = 'Semua';
   String get selectedMachineType => _selectedMachineType ?? 'Semua';
 
-  // Capacity Scale (Khusus Kopi)
   String? _selectedCapacityScale = 'Semua';
   String get selectedCapacityScale => _selectedCapacityScale ?? 'Semua';
 
-  // Legacy Category & Power Source
   String? _selectedCategory = 'Semua';
   String get selectedCategory => _selectedCategory ?? 'Semua';
 
   String? _selectedPowerSource = 'Semua';
   String get selectedPowerSource => _selectedPowerSource ?? 'Semua';
 
-  String? _sortBy = 'Populer'; // 'Populer', 'Harga Terendah', 'Harga Tertinggi', 'Rating'
+  String? _sortBy = 'Populer';
   String get sortBy => _sortBy ?? 'Populer';
 
   void setSearchQuery(String query) {
@@ -170,7 +283,6 @@ class AppState extends ChangeNotifier {
 
   void setCommodityFilter(String commodity) {
     _selectedCommodity = commodity;
-    // Reset subordinate machine type and capacity scale when commodity switches
     _selectedMachineType = 'Semua';
     if (commodity == 'Kakao') {
       _selectedCapacityScale = 'Semua';
@@ -209,7 +321,6 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Dynamic getters for dropdowns/chips
   List<String> get availableCommodities => const ['Semua', 'Roaster Kopi', 'Mesin Kopi', 'Kakao'];
   List<String> get availableProcessStages => const ['Semua', 'Hulu', 'Hilir'];
 
@@ -303,6 +414,8 @@ class AppState extends ChangeNotifier {
               m.capacity.toLowerCase().contains(query));
 
       final matchesCommodity = curCommodity == 'Semua' ||
+          (curCommodity == 'Roaster Kopi' && prod.name.toLowerCase().contains('roast')) ||
+          (curCommodity == 'Mesin Kopi' && prod.commodity.toLowerCase() == 'kopi') ||
           prod.commodity.toLowerCase() == curCommodity.toLowerCase();
 
       final matchesStage = curStage == 'Semua' ||
@@ -385,8 +498,8 @@ class AppState extends ChangeNotifier {
     final newOrder = OrderModel(
       id: 'ORD-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
       poNumber: newPoNumber,
-      companyName: _companyName,
-      contactPerson: 'Perwakilan Procurement',
+      companyName: _companyName.isNotEmpty ? _companyName : 'PT Kopi Nusantara Jaya',
+      contactPerson: _userName.isNotEmpty ? _userName : 'Perwakilan Procurement',
       productName: product.name,
       category: product.category,
       quantity: quantity,
@@ -400,12 +513,13 @@ class AppState extends ChangeNotifier {
       dpProofPath: proofPath,
       deliveryAddress: deliveryAddress,
       customNotes: customNotes,
+      serialNumber: 'SN-2026-MDI-8820',
     );
 
     _orders.insert(0, newOrder);
     addNotification(
-      'Purchase Order Terbuat!',
-      'PO $newPoNumber berhasil dibuat. Menunggu verifikasi bukti DP 50% oleh Tim Finance Admin.',
+      'Purchase Order Diterbitkan!',
+      'PO $newPoNumber berhasil dibuat. Bukti transfer DP sedang diverifikasi tim finance pabrik.',
     );
     notifyListeners();
   }
@@ -476,8 +590,8 @@ class AppState extends ChangeNotifier {
     final newOrder = CustomOrderModel(
       id: 'RFQ-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
       rfqNumber: newRfq,
-      companyName: _companyName,
-      contactPerson: 'Admin Procurement',
+      companyName: _companyName.isNotEmpty ? _companyName : 'Perusahaan Mitra',
+      contactPerson: _userName.isNotEmpty ? _userName : 'Admin Procurement',
       phone: _userPhone,
       email: _userEmail,
       machineType: machineType,
@@ -530,7 +644,7 @@ class AppState extends ChangeNotifier {
     final newTicket = ServiceTicketModel(
       id: 'TCK-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
       ticketNumber: newTck,
-      companyName: _companyName,
+      companyName: _companyName.isNotEmpty ? _companyName : 'PT Kopi Nusantara Jaya',
       serialNumber: serialNumber,
       machineModel: machineModel,
       type: type,
@@ -602,15 +716,9 @@ class AppState extends ChangeNotifier {
   final List<AppNotification> _notifications = [
     AppNotification(
       id: 'N1',
-      title: 'Update QC Mesin',
-      message: 'Pesanan PO-2026-092 (Roaster 5kg) telah lulus pengujian tekanan & suhu.',
-      time: DateTime.now().subtract(const Duration(hours: 2)),
-    ),
-    AppNotification(
-      id: 'N2',
-      title: 'Invoice Pelunasan Terbit',
-      message: 'Silakan upload bukti pelunasan sisa 50% untuk pesanan PO-2026-095.',
-      time: DateTime.now().subtract(const Duration(hours: 5)),
+      title: 'Katalog Mesin Siap',
+      message: 'Katalog unit mesin pengolahan kopi & kakao PT Manufactur Dynamic Indonesia telah terhubung.',
+      time: DateTime.now().subtract(const Duration(minutes: 10)),
     ),
   ];
   List<AppNotification> get notifications => _notifications;

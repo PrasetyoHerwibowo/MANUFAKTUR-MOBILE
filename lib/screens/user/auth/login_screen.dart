@@ -5,6 +5,7 @@ import '../../../providers/app_state.dart';
 import '../../../core/theme/app_colors.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
+import 'activation_code_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleManualLogin(AppState appState) {
+  Future<void> _handleManualLogin(AppState appState) async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -53,23 +54,56 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    Future.delayed(const Duration(milliseconds: 600), () {
+    try {
+      final res = await appState.login(email, password);
+
       if (!mounted) return;
       setState(() => _isLoading = false);
 
-      final userName = email.split('@').first;
-      appState.login(email, password, 'Pengguna', name: userName);
+      if (res['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Berhasil masuk! Selamat datang kembali."),
+            backgroundColor: AppColors.success,
+          ),
+        );
 
+        Navigator.pop(context);
+      } else if (res['needs_activation'] == true) {
+        // Akun belum aktif -> arahkan ke halaman input 10 digit kode
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res['message'] ?? "Akun belum aktif. Masukkan kode 10 digit verifikasi."),
+            backgroundColor: AppColors.warning,
+          ),
+        );
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ActivationCodeScreen(
+              email: email,
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res['message'] ?? "Email atau kata sandi yang Anda masukkan salah."),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Berhasil masuk! Selamat datang kembali."),
-          backgroundColor: AppColors.success,
+        SnackBar(
+          content: Text("Terjadi kendala autentikasi: $e"),
+          backgroundColor: AppColors.error,
         ),
       );
-
-      // Kembali ke halaman sebelumnya secara smooth
-      Navigator.pop(context);
-    });
+    }
   }
 
   void _showGoogleAccountPicker(BuildContext context, AppState appState) {
@@ -315,27 +349,31 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
 
-    await Future.delayed(const Duration(milliseconds: 700));
-
-    await appState.loginWithSSO(
-      provider: 'google',
-      name: name,
+    final res = await appState.loginWithGoogle(
       email: email,
-      company: 'Mitra',
+      name: name,
+      company: 'Mitra $name',
     );
 
     if (!mounted) return;
     Navigator.of(context, rootNavigator: true).pop(); // Tutup dialog loading
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Berhasil masuk sebagai $name!"),
-        backgroundColor: AppColors.success,
-      ),
-    );
-
-    // Kembali ke halaman sebelumnya
-    Navigator.pop(context);
+    if (res['success'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Berhasil masuk sebagai $name!"),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res['message'] ?? "Gagal masuk via Google."),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   Widget _buildGoogleIcon() {
@@ -388,64 +426,52 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Clean App Icon
-                Center(
-                  child: Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkSurface : Colors.white,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: isDark ? Colors.white10 : AppColors.border,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
+                // Logo Icon
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkSurface : const Color(0xFFFEE2E2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Center(
+                    child: Icon(
                       Icons.coffee_maker_rounded,
-                      size: 32,
                       color: AppColors.secondary,
+                      size: 32,
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
-                // Greeting Title & Subtitle (Clean & Simple)
+                // Welcome Texts
                 Text(
                   "Selamat Datang",
-                  textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
-                    fontSize: 24,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   "Masuk untuk melanjutkan ke akun Anda",
-                  textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
 
-                // Main Login Card
+                // Form Container Card
                 Container(
-                  padding: const EdgeInsets.all(22),
+                  padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.darkCardBg : Colors.white,
                     borderRadius: BorderRadius.circular(20),
@@ -454,8 +480,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.03),
-                        blurRadius: 12,
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),
                     ],
@@ -463,7 +489,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Email Field
+                      // Email
                       Text(
                         "Email",
                         style: GoogleFonts.plusJakartaSans(
@@ -484,7 +510,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Password Field
+                      // Password
                       Text(
                         "Kata Sandi",
                         style: GoogleFonts.plusJakartaSans(
@@ -513,7 +539,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               });
                             },
                           ),
-                          hintText: "••••••••",
+                          hintText: "Masukkan kata sandi",
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -525,19 +551,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           Row(
                             children: [
                               SizedBox(
-                                height: 20,
-                                width: 20,
+                                width: 24,
+                                height: 24,
                                 child: Checkbox(
                                   value: _rememberMe,
-                                  activeColor: AppColors.secondary,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
                                   onChanged: (val) {
                                     setState(() {
                                       _rememberMe = val ?? true;
                                     });
                                   },
+                                  activeColor: AppColors.secondary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -683,7 +709,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Register Footer Link (Smooth, clean, no B2B jargon)
+                // Register Footer Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

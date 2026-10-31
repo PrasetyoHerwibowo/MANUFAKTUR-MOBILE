@@ -4,11 +4,11 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../core/theme/app_colors.dart';
 import '../../widgets/app_notification_sheet.dart';
+import '../../widgets/auth_required_gate.dart';
 import 'home/home_screen.dart';
 import 'order/order_tracking_screen.dart';
 import 'service/booking_service_screen.dart';
 import 'profile/profile_screen.dart';
-import 'auth/login_screen.dart';
 
 class UserMainLayout extends StatefulWidget {
   const UserMainLayout({super.key});
@@ -21,17 +21,57 @@ class _UserMainLayoutState extends State<UserMainLayout> {
   int _currentIndex = 0;
   final TextEditingController _searchController = TextEditingController();
 
-  List<Widget> get _pages => const [
-    HomeScreen(),
-    OrderTrackingScreen(),
-    BookingServiceScreen(),
-    ProfileScreen(),
-  ];
-
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Widget _buildBody(AppState appState) {
+    switch (_currentIndex) {
+      case 0:
+        // Page 1: Home Produk selalu ditampilkan walaupun user belum login
+        return const HomeScreen();
+
+      case 1:
+        // Page 2: Pesanan Saya (Jangan ditampilkan jika belum login)
+        if (!appState.isLoggedIn) {
+          return const AuthRequiredGate(
+            title: "Pesanan Memerlukan Akun",
+            description:
+                "Masuk atau daftarkan akun resmi Anda untuk mengakses Purchase Order (PO), riwayat pembayaran DP 50%, serta timeline 7 tahap produksi mesin.",
+            icon: Icons.local_shipping_outlined,
+          );
+        }
+        return const OrderTrackingScreen();
+
+      case 2:
+        // Page 3: Servis & Garansi (Jangan ditampilkan jika belum login)
+        if (!appState.isLoggedIn) {
+          return const AuthRequiredGate(
+            title: "Layanan Servis & Garansi",
+            description:
+                "Untuk mengajukan jadwal kunjungan teknisi pabrik atau klaim garansi unit, Anda wajib login atau mendaftarkan akun terverifikasi.",
+            icon: Icons.build_outlined,
+          );
+        }
+        return const BookingServiceScreen();
+
+      case 3:
+        // Page 4: Profil Pengguna
+        if (!appState.isLoggedIn) {
+          return const AuthRequiredGate(
+            title: "Profil Pengguna",
+            description:
+                "Silakan masuk ke akun Anda untuk melihat rincian perusahaan, status verifikasi akun, dan pengaturan profil.",
+            icon: Icons.person_outline_rounded,
+          );
+        }
+        return const ProfileScreen();
+
+      default:
+        return const HomeScreen();
+    }
   }
 
   @override
@@ -50,7 +90,7 @@ class _UserMainLayoutState extends State<UserMainLayout> {
 
     return Scaffold(
       appBar: _buildAppBar(context, appState, isDark, unreadCount),
-      body: _pages[_currentIndex],
+      body: _buildBody(appState),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : Colors.white,
@@ -71,14 +111,6 @@ class _UserMainLayoutState extends State<UserMainLayout> {
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) {
-            if (index == 3) {
-              // Profil sementara mengarah ke halaman login sesuai permintaan user
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
-              return;
-            }
             setState(() {
               _currentIndex = index;
             });

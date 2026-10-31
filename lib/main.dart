@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_state.dart';
 import 'core/theme/app_theme.dart';
-import 'screens/user/auth/login_screen.dart';
 import 'screens/user/user_main_layout.dart';
 import 'screens/admin/admin_main_layout.dart';
 
@@ -28,9 +27,8 @@ class ManufakturApp extends StatelessWidget {
         if (appState.appMode == AppMode.admin) {
           mainScreen = const AdminMainLayout();
         } else {
-          mainScreen = appState.isLoggedIn
-              ? const UserMainLayout()
-              : const LoginScreen();
+          // Home katalog mesin dapat diakses langsung tanpa harus login terlebih dahulu
+          mainScreen = const UserMainLayout();
         }
 
         return MaterialApp(
