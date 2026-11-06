@@ -648,9 +648,3 @@ class AppState extends ChangeNotifier {
     }
   }
 }
-
-  void clearAllNotifications() {
-    _notifications.clear();
-    notifyListeners();
-  }
-}
