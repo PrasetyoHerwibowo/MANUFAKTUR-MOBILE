@@ -6,6 +6,8 @@ import '../../../core/models/order_model.dart';
 import '../../../core/models/custom_order_model.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/status_badge.dart';
+import '../../../widgets/pdf_preview_dialog.dart';
+import '../info/contact_whatsapp_screen.dart';
 import 'order_detail_screen.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
@@ -19,45 +21,6 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  static const List<Map<String, dynamic>> _productionStages = [
-    {
-      'title': 'Verifikasi DP',
-      'short': 'Verifikasi DP',
-      'icon': Icons.receipt_long_rounded,
-      'desc': 'Pemeriksaan & validasi pembayaran DP 50% oleh finance pabrik.',
-    },
-    {
-      'title': 'Persiapan Bahan Baku',
-      'short': 'Bahan Baku',
-      'icon': Icons.inventory_2_outlined,
-      'desc': 'Pemotongan laser stainless steel 304 & penyiapan boiler tembaga murni.',
-    },
-    {
-      'title': 'Proses Produksi/Assembly',
-      'short': 'Produksi/Assembly',
-      'icon': Icons.precision_manufacturing_rounded,
-      'desc': 'Perakitan komponen mekanik, pemipaan hidrolik, dan wiring kelistrikan.',
-    },
-    {
-      'title': 'Quality Control (QC)',
-      'short': 'Quality Control (QC)',
-      'icon': Icons.verified_rounded,
-      'desc': 'Uji tekanan hidrostatik 12 bar, kalibrasi suhu PID, dan uji kelistrikan.',
-    },
-    {
-      'title': 'Menunggu Pelunasan',
-      'short': 'Menunggu Pelunasan',
-      'icon': Icons.payments_rounded,
-      'desc': 'Mesin lulus uji QC 100%. Pelunasan sisa 50% sebelum pengiriman.',
-    },
-    {
-      'title': 'Pengiriman & Instalasi',
-      'short': 'Kirim & Instalasi',
-      'icon': Icons.local_shipping_rounded,
-      'desc': 'Pengiriman kargo khusus & instalasi on-site oleh teknisi resmi pabrik.',
-    },
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -70,32 +33,18 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     super.dispose();
   }
 
-  int _getTimelineIndex(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.verifikasiDp:
-        return 0;
-      case OrderStatus.persiapanBahan:
-        return 1;
-      case OrderStatus.prosesProduksi:
-        return 2;
-      case OrderStatus.qualityControl:
-        return 3;
-      case OrderStatus.menungguPelunasan:
-        return 4;
-      case OrderStatus.pengirimanInstalasi:
-      case OrderStatus.afterSalesService:
-        return 5;
-    }
-  }
-
   String _formatCurrency(double amount) {
     return "Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}";
   }
 
-  String? _findProductImage(AppState appState, String productName) {
+  String? _resolveProductImage(AppState appState, OrderModel order) {
+    if (order.imageUrl != null && order.imageUrl!.isNotEmpty) {
+      return order.imageUrl;
+    }
     final matches = appState.products.where(
-      (p) => p.name.toLowerCase().contains(productName.toLowerCase()) ||
-          productName.toLowerCase().contains(p.name.toLowerCase()),
+      (p) =>
+          p.name.toLowerCase().contains(order.productName.toLowerCase()) ||
+          order.productName.toLowerCase().contains(p.name.toLowerCase()),
     );
     if (matches.isNotEmpty) return matches.first.imageUrl;
     return null;
@@ -105,13 +54,13 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final isDark = appState.isDarkMode;
-    final orders = appState.orders;
+    final allOrders = appState.orders;
     final rfqOrders = appState.customOrders;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(50),
+        preferredSize: const Size.fromHeight(48),
         child: Container(
           color: isDark ? AppColors.darkSurface : Colors.white,
           child: TabBar(
@@ -129,8 +78,32 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
               fontWeight: FontWeight.w500,
             ),
             tabs: [
-              Tab(text: "Pesanan Mesin PO (${orders.length})"),
-              Tab(text: "Custom RFQ Request (${rfqOrders.length})"),
+              Tab(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.precision_manufacturing_outlined, size: 16),
+                      const SizedBox(width: 6),
+                      Text("Pesanan Mesin (${allOrders.length})"),
+                    ],
+                  ),
+                ),
+              ),
+              Tab(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.design_services_outlined, size: 16),
+                      const SizedBox(width: 6),
+                      Text("Custom RFQ (${rfqOrders.length})"),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -138,8 +111,8 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          // Tab 1: Standard PO Tracking
-          orders.isEmpty
+          // TAB 1: Standar PO Orders
+          allOrders.isEmpty
               ? _buildEmptyState(
                   icon: Icons.inventory_2_outlined,
                   title: "Belum Ada Pesanan Mesin",
@@ -147,16 +120,16 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                   isDark: isDark,
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   physics: const BouncingScrollPhysics(),
-                  itemCount: orders.length,
+                  itemCount: allOrders.length,
                   itemBuilder: (context, index) {
-                    final order = orders[index];
+                    final order = allOrders[index];
                     return _buildPoCard(context, appState, order, isDark);
                   },
                 ),
 
-          // Tab 2: Custom RFQ Tracking
+          // TAB 2: Custom RFQ Orders
           rfqOrders.isEmpty
               ? _buildEmptyState(
                   icon: Icons.settings_suggest_outlined,
@@ -181,24 +154,23 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   // ================= 1. PO ORDER CARD =================
   Widget _buildPoCard(
       BuildContext context, AppState appState, OrderModel order, bool isDark) {
-    final currentStage = _getTimelineIndex(order.status);
     final totalFormatted = _formatCurrency(order.totalAmount);
     final dpFormatted = _formatCurrency(order.dpAmount);
     final sisaFormatted = _formatCurrency(order.pelunasanAmount);
-    final imageUrl = _findProductImage(appState, order.productName);
+    final imageUrl = _resolveProductImage(appState, order);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCardBg : Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isDark ? Colors.white10 : AppColors.border,
+          color: isDark ? Colors.white12 : AppColors.border,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -207,7 +179,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Header Card (PO Number, Date, Status Badge)
+          // Header Card (HANYA PO Number & Date - Status Badge Dihapus dari Semua Pesanan)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
@@ -220,46 +192,40 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
               ),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.description_rounded,
+                    size: 16,
+                    color: AppColors.secondary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.description_rounded,
-                        size: 16,
-                        color: AppColors.secondary,
+                    Text(
+                      order.poNumber,
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14.5,
+                        color: isDark ? Colors.white : AppColors.primary,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          order.poNumber,
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14.5,
-                            color: isDark ? Colors.white : AppColors.primary,
-                          ),
-                        ),
-                        Text(
-                          "Tgl Order: ${order.orderDate}",
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10.5,
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      "Tgl Order: ${order.orderDate}",
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10.5,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
+                      ),
                     ),
                   ],
                 ),
-                OrderStatusBadge(status: order.status),
               ],
             ),
           ),
@@ -269,93 +235,125 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 2. Info Mesin yang Dipesan
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Machine Thumbnail
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: imageUrl != null
-                          ? Image.network(
-                              imageUrl,
-                              width: 80,
-                              height: 80,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  _buildPlaceholderImage(isDark),
-                            )
-                          : _buildPlaceholderImage(isDark),
-                    ),
-                    const SizedBox(width: 14),
+                // Info Mesin yang Dipesan
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OrderDetailScreen(order: order),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Machine Thumbnail
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: imageUrl != null
+                            ? Image.network(
+                                imageUrl,
+                                width: 84,
+                                height: 84,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    _buildPlaceholderImage(isDark),
+                              )
+                            : _buildPlaceholderImage(isDark),
+                      ),
+                      const SizedBox(width: 14),
 
-                    // Machine details
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.secondary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Text(
-                              order.category,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.secondary,
+                      // Machine details
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                              decoration: BoxDecoration(
+                                color: AppColors.secondary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                order.category.toUpperCase(),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.secondary,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            order.productName,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14.5,
-                              color: isDark ? Colors.white : AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "Kuantitas: ${order.quantity} Unit  •  ${order.serialNumber}",
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11,
-                              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                            ),
-                          ),
-                          if (order.customNotes.isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Text(
-                              "Catatan: ${order.customNotes}",
-                              maxLines: 1,
+                              order.productName,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 10.5,
-                                fontStyle: FontStyle.italic,
-                                color: isDark ? Colors.amber.shade200 : const Color(0xFFB45309),
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14.5,
+                                color: isDark ? Colors.white : AppColors.textPrimary,
                               ),
                             ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.white10 : Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    "${order.quantity} Unit",
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white70 : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    order.serialNumber,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 10.5,
+                                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (order.customNotes.isNotEmpty) ...[
+                              const SizedBox(height: 5),
+                              Text(
+                                "Catatan: ${order.customNotes}",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10,
+                                  fontStyle: FontStyle.italic,
+                                  color: isDark ? Colors.amber.shade200 : const Color(0xFFB45309),
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: 14),
 
-                // 3. Estimasi Pengiriman & Lokasi Tujuan
+                // Estimasi Pengiriman & Lokasi Tujuan
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF0F172A)
-                        : const Color(0xFFF1F5F9),
+                    color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isDark ? Colors.white10 : AppColors.border,
@@ -364,14 +362,14 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(7),
+                        padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: const Color(0xFF2563EB).withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.local_shipping_rounded,
-                          size: 16,
+                          size: 15,
                           color: Color(0xFF2563EB),
                         ),
                       ),
@@ -384,7 +382,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  "Estimasi Pengiriman Pabrik:",
+                                  "Target Pengiriman:",
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w600,
@@ -394,7 +392,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                                 Text(
                                   order.estimatedCompletionDate,
                                   style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 11,
+                                    fontSize: 10.5,
                                     fontWeight: FontWeight.bold,
                                     color: const Color(0xFF2563EB),
                                   ),
@@ -407,7 +405,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 10.5,
+                                fontSize: 10,
                                 color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
                               ),
                             ),
@@ -418,48 +416,61 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                   ),
                 ),
 
-                const SizedBox(height: 16),
-
-                // 4. Timeline Produksi 6 Tahap
-                _buildProductionTimeline(currentStage, isDark),
-
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Divider(color: isDark ? Colors.white10 : AppColors.border),
                 const SizedBox(height: 8),
 
-                // 5. Total Tagihan & Action Buttons
+                // Total Tagihan & Action Button
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Total Tagihan PO",
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10,
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Total Tagihan PO",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
+                            ),
                           ),
-                        ),
-                        Text(
-                          totalFormatted,
-                          style: GoogleFonts.outfit(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.secondary,
+                          const SizedBox(height: 2),
+                          Text(
+                            totalFormatted,
+                            style: GoogleFonts.outfit(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.secondary,
+                            ),
                           ),
-                        ),
-                        Text(
-                          "DP 50%: $dpFormatted  •  Sisa: $sisaFormatted",
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 9.5,
-                            color: isDark ? Colors.white54 : AppColors.textMuted,
+                          const SizedBox(height: 2),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 2,
+                            children: [
+                              Text(
+                                "DP 50%: $dpFormatted",
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 9.5,
+                                  color: isDark ? Colors.white54 : AppColors.textMuted,
+                                ),
+                              ),
+                              Text(
+                                "Sisa: $sisaFormatted",
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 9.5,
+                                  color: isDark ? Colors.white54 : AppColors.textMuted,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
 
+                    // Hanya tombol Detail Pesanan
                     ElevatedButton(
                       onPressed: () {
                         Navigator.push(
@@ -475,7 +486,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                             : AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -485,10 +496,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                         children: [
                           Text(
                             order.status == OrderStatus.menungguPelunasan
-                                ? "Pelunasan 50%"
-                                : "Detail Live",
+                                ? "Pelunasan"
+                                : "Detail Pesanan",
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11.5,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -507,205 +518,40 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     );
   }
 
-  // ================= 2. 6-STAGE PRODUCTION TIMELINE =================
-  Widget _buildProductionTimeline(int currentStageIndex, bool isDark) {
-    final clampedStage = currentStageIndex.clamp(0, 5);
-    final activeStageData = _productionStages[clampedStage];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Timeline Header
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.linear_scale_rounded,
-                  size: 15,
-                  color: AppColors.secondary,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  "TIMELINE PRODUKSI (6 TAHAP)",
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.6,
-                    color: AppColors.secondary,
-                  ),
-                ),
-              ],
-            ),
-            Text(
-              "Tahap ${clampedStage + 1} dari 6",
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 10.5,
-                fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 10),
-
-        // Visual Connected 6-Step Indicator
-        Row(
-          children: List.generate(6, (index) {
-            final isCompleted = index < clampedStage;
-            final isCurrent = index == clampedStage;
-
-            Color nodeColor;
-            Widget nodeChild;
-
-            if (isCompleted) {
-              nodeColor = const Color(0xFF10B981); // Green
-              nodeChild = const Icon(Icons.check_rounded, color: Colors.white, size: 11);
-            } else if (isCurrent) {
-              nodeColor = AppColors.secondary; // Red accent
-              nodeChild = Text(
-                "${index + 1}",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              );
-            } else {
-              nodeColor = isDark ? Colors.white24 : const Color(0xFFCBD5E1);
-              nodeChild = Text(
-                "${index + 1}",
-                style: TextStyle(
-                  color: isDark ? Colors.white60 : const Color(0xFF64748B),
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              );
-            }
-
-            return Expanded(
-              child: Row(
-                children: [
-                  Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: nodeColor,
-                      shape: BoxShape.circle,
-                      boxShadow: isCurrent
-                          ? [
-                              BoxShadow(
-                                color: AppColors.secondary.withValues(alpha: 0.4),
-                                blurRadius: 6,
-                                spreadRadius: 1,
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Center(child: nodeChild),
-                  ),
-                  if (index < 5)
-                    Expanded(
-                      child: Container(
-                        height: 3,
-                        color: index < clampedStage
-                            ? const Color(0xFF10B981)
-                            : (isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          }),
-        ),
-
-        const SizedBox(height: 10),
-
-        // Active Stage Card Callout
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-          decoration: BoxDecoration(
-            color: isDark
-                ? AppColors.secondary.withValues(alpha: 0.1)
-                : const Color(0xFFFFF1F2),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: AppColors.secondary.withValues(alpha: 0.25),
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                activeStageData['icon'] as IconData,
-                size: 16,
-                color: AppColors.secondary,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Tahap ${clampedStage + 1}: ${activeStageData['title']}",
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      activeStageData['desc'] as String,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10,
-                        height: 1.3,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildPlaceholderImage(bool isDark) {
     return Container(
-      width: 80,
-      height: 80,
+      width: 76,
+      height: 76,
       color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
       child: const Center(
         child: Icon(
-          Icons.coffee_maker_rounded,
-          size: 32,
+          Icons.precision_manufacturing_rounded,
+          size: 30,
           color: AppColors.secondary,
         ),
       ),
     );
   }
 
-  // ================= 3. CUSTOM RFQ CARD =================
+  // ================= 2. CUSTOM RFQ CARD =================
   Widget _buildRfqCard(BuildContext context, CustomOrderModel rfq, bool isDark) {
+    final displayPrice = rfq.quotationPrice ?? rfq.budgetRange;
+    final priceLabel =
+        rfq.quotationPrice != null ? "Penawaran Resmi Pabrik" : "Estimasi Budget";
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkCardBg : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isDark ? Colors.white10 : AppColors.border,
+          color: isDark ? Colors.white12 : AppColors.border,
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-            blurRadius: 8,
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
+            blurRadius: 10,
             offset: const Offset(0, 3),
           ),
         ],
@@ -713,94 +559,707 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                rfq.rfqNumber,
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: isDark ? Colors.white : AppColors.primary,
+          // Header Card (Icon, RFQ Number, Tgl Pengajuan & Status Badge - Bebas Overflow)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : const Color(0xFFF8FAFC),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+              border: Border(
+                bottom: BorderSide(
+                  color: isDark ? Colors.white10 : AppColors.border,
                 ),
               ),
-              CustomOrderStatusBadge(status: rfq.status),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            rfq.machineType,
-            style: GoogleFonts.plusJakartaSans(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              color: isDark ? Colors.white : AppColors.textPrimary,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.description_rounded,
+                          size: 16,
+                          color: AppColors.secondary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              rfq.rfqNumber,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14.5,
+                                color: isDark ? Colors.white : AppColors.primary,
+                              ),
+                            ),
+                            Text(
+                              rfq.requestDate,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10.5,
+                                color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                CustomOrderStatusBadge(status: rfq.status),
+              ],
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            "Target Kapasitas: ${rfq.targetCapacity}  •  Estimasi Budget: ${rfq.budgetRange}",
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11.5,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Info Mesin yang Dipesan
+                InkWell(
+                  onTap: () => _showRfqDetailSheet(context, rfq, isDark),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Machine Thumbnail
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: _buildPlaceholderImage(isDark),
+                      ),
+                      const SizedBox(width: 14),
+
+                      // Machine details (Clean & Tidak Ramai)
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              rfq.machineType,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14.5,
+                                color: isDark ? Colors.white : AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              "Kapasitas: ${rfq.targetCapacity}",
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (rfq.customFeatures.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                "Catatan: ${rfq.customFeatures}",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10,
+                                  fontStyle: FontStyle.italic,
+                                  color: isDark
+                                      ? Colors.amber.shade200
+                                      : const Color(0xFFB45309),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+
+                // Estimasi Pengiriman & Pemesan
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? Colors.white10 : AppColors.border,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.local_shipping_rounded,
+                          size: 15,
+                          color: Color(0xFF2563EB),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "Target Pengiriman:",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? Colors.white70 : AppColors.textSecondary,
+                                  ),
+                                ),
+                                Text(
+                                  rfq.targetDeliveryDate,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF2563EB),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              "Pemesan: ${rfq.companyName}",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10,
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+                Divider(color: isDark ? Colors.white10 : AppColors.border),
+                const SizedBox(height: 8),
+
+                // Total Tagihan / Budget & Action Button (Bersih & Lega)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            priceLabel,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10,
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.textMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            displayPrice,
+                            style: GoogleFonts.outfit(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.secondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            rfq.quotationPrice != null
+                                ? "Penawaran pabrik tersedia"
+                                : "Listrik: ${rfq.electricalSpecs}",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 9.5,
+                              color: isDark ? Colors.white54 : AppColors.textMuted,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // Tombol Detail Custom
+                    ElevatedButton(
+                      onPressed: () {
+                        _showRfqDetailSheet(context, rfq, isDark);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            "Detail Custom",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.arrow_forward_rounded, size: 14),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          if (rfq.customFeatures.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              "Fitur Custom: ${rfq.customFeatures}",
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
-                color: isDark ? Colors.amber.shade200 : const Color(0xFFB45309),
-              ),
-            ),
-          ],
-          if (rfq.quotationPrice != null) ...[
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.purple.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.request_quote_rounded, color: Colors.purple, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+    );
+  }
+
+  void _showRfqDetailSheet(
+      BuildContext context, CustomOrderModel rfq, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkSurface : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.only(
+            top: 16,
+            left: 20,
+            right: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
                       children: [
                         Text(
-                          "Surat Penawaran / Quotation Pabrik:",
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10,
+                          rfq.rfqNumber,
+                          style: GoogleFonts.outfit(
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.purple,
+                            color: isDark ? Colors.white : AppColors.primary,
                           ),
                         ),
-                        Text(
-                          rfq.quotationPrice!,
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: Colors.purple,
+                        const SizedBox(width: 8),
+                        CustomOrderStatusBadge(status: rfq.status),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => Navigator.pop(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                Text(
+                  "Tanggal Pengajuan: ${rfq.requestDate}",
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Divider(color: isDark ? Colors.white10 : AppColors.border),
+                const SizedBox(height: 12),
+                Text(
+                  "Mesin Custom yang Diajukan:",
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white70 : AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  rfq.machineType,
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? Colors.white10 : AppColors.border,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildDetailItem(
+                        icon: Icons.speed_rounded,
+                        label: "Target Kapasitas",
+                        value: rfq.targetCapacity,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDetailItem(
+                        icon: Icons.bolt_rounded,
+                        label: "Spesifikasi Listrik",
+                        value: rfq.electricalSpecs,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDetailItem(
+                        icon: Icons.payments_outlined,
+                        label: "Estimasi Budget",
+                        value: rfq.budgetRange,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDetailItem(
+                        icon: Icons.calendar_today_outlined,
+                        label: "Target Pengiriman",
+                        value: rfq.targetDeliveryDate,
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                ),
+                if (rfq.customFeatures.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    "Fitur Khusus / Custom:",
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white70 : AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.03)
+                          : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    child: Text(
+                      rfq.customFeatures,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: isDark ? Colors.white70 : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+                if (rfq.attachmentFileName != null &&
+                    rfq.attachmentFileName!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.02)
+                          : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.attach_file_rounded,
+                            size: 16, color: Color(0xFF64748B)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Blueprint: ${rfq.attachmentFileName!}",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white : AppColors.textPrimary,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ],
-              ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.02)
+                        : const Color(0xFFFAFAFA),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color: isDark ? Colors.white10 : AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.business_rounded,
+                              size: 15, color: Color(0xFF64748B)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              rfq.companyName,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.person_outline_rounded,
+                              size: 15, color: Color(0xFF64748B)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              "${rfq.contactPerson}  •  ${rfq.phone}",
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                if (rfq.quotationPrice != null) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isDark ? Colors.white12 : const Color(0xFFCBD5E1),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Surat Penawaran Resmi Pabrik:",
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.textMuted,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 1),
+                                  Text(
+                                    rfq.quotationPrice!,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 16.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.secondary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => PdfPreviewModal(
+                                    title: "Surat Penawaran Resmi (Quotation)",
+                                    subtitle: rfq.rfqNumber,
+                                    pdfType: "QUOTATION",
+                                    data: {
+                                      'rfqNumber': rfq.rfqNumber,
+                                      'company': rfq.companyName,
+                                      'productName': rfq.machineType,
+                                      'total': rfq.quotationPrice,
+                                    },
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.picture_as_pdf_outlined,
+                                  size: 14),
+                              label: const Text("Lihat PDF"),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (rfq.quotationNotes != null &&
+                            rfq.quotationNotes!.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            "Catatan: ${rfq.quotationNotes!}",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ContactWhatsappScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.support_agent_rounded, size: 18),
+                    label: const Text("KONSULTASI TIM TEKNIK"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ],
-      ),
+          ),
+        );
+      },
     );
   }
 
-  // ================= 4. EMPTY STATE =================
+  Widget _buildDetailItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required bool isDark,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 15, color: const Color(0xFF64748B)),
+        const SizedBox(width: 8),
+        Text(
+          "$label: ",
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 11,
+            color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : AppColors.textPrimary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ================= 3. EMPTY STATE =================
   Widget _buildEmptyState({
     required IconData icon,
     required String title,
@@ -813,10 +1272,17 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 56,
-              color: isDark ? Colors.white24 : AppColors.textMuted.withValues(alpha: 0.5),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 48,
+                color: isDark ? Colors.white30 : AppColors.textMuted.withValues(alpha: 0.5),
+              ),
             ),
             const SizedBox(height: 14),
             Text(

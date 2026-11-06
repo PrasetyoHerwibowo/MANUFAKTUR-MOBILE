@@ -28,6 +28,10 @@ class OrderModel {
   final String deliveryAddress;
   final String customNotes;
   final String serialNumber;
+  final String? imageUrl;
+  final String? description;
+  final String buyerPhone;
+  final String buyerEmail;
 
   OrderModel({
     required this.id,
@@ -49,6 +53,10 @@ class OrderModel {
     required this.deliveryAddress,
     this.customNotes = '',
     this.serialNumber = 'SN-2026-MDI-8820',
+    this.imageUrl,
+    this.description,
+    this.buyerPhone = '+62 812-9876-5432',
+    this.buyerEmail = 'procurement@kopi-nusantara.id',
   });
 
   int get currentStageIndex {
@@ -109,4 +117,3 @@ class OrderModel {
     "Unit aktif beroperasi, garansi 2 tahun & booking teknisi berkala.",
   ];
 }
-

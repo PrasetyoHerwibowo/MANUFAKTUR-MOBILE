@@ -89,51 +89,59 @@ class CustomOrderStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color bg;
-    Color fg;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     String text;
 
     switch (status) {
       case CustomOrderStatus.diajukan:
-        bg = Colors.blue.shade50;
-        fg = Colors.blue.shade800;
         text = "Pengajuan Baru";
         break;
       case CustomOrderStatus.dalamReview:
-        bg = Colors.orange.shade50;
-        fg = Colors.orange.shade800;
-        text = "Dalam Review Teknik";
+        text = "Review Teknik";
         break;
       case CustomOrderStatus.quotationTerkirim:
-        bg = Colors.purple.shade50;
-        fg = Colors.purple.shade800;
-        text = "Quotation Terkirim";
+        text = "Quotation";
         break;
       case CustomOrderStatus.disetujui:
-        bg = Colors.green.shade50;
-        fg = Colors.green.shade800;
         text = "Disetujui";
         break;
       case CustomOrderStatus.ditolak:
-        bg = Colors.red.shade50;
-        fg = Colors.red.shade800;
         text = "Ditolak";
         break;
     }
 
+    // Satu warna netral, clean & elegan sesuai permintaan Mimi
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
       decoration: BoxDecoration(
-        color: bg,
+        color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        text,
-        style: GoogleFonts.plusJakartaSans(
-          color: fg,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
+        border: Border.all(
+          color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+          width: 1,
         ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDark ? Colors.white60 : const Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: GoogleFonts.plusJakartaSans(
+              color: isDark ? Colors.white70 : const Color(0xFF475569),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

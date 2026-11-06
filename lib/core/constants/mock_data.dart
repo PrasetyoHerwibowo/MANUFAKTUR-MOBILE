@@ -365,6 +365,8 @@ class MockData {
           dpProofPath: 'bukti_transfer_dp_mdi_pulper.jpg',
           deliveryAddress: 'Kawasan Perkebunan Kopi Ijen, Banyuwangi, Jawa Timur',
           customNotes: 'Silinder pengupas stainless 304 dengan motor listrik 3-phase.',
+          buyerPhone: '+62 812-9876-5432',
+          buyerEmail: 'hendra.wijaya@kopinusantara.id',
           serialNumber: 'SN-2026-MDI-PL200-01',
         ),
         OrderModel(
@@ -385,6 +387,8 @@ class MockData {
           dpProofPath: 'bukti_dp_nusantara.jpg',
           deliveryAddress: 'Jl. Sudirman No. 45, Jakarta Selatan',
           customNotes: 'Laser engraving logo "Kopi Nusantara" pada side panel stainless.',
+          buyerPhone: '+62 812-9876-5432',
+          buyerEmail: 'hendra.wijaya@kopinusantara.id',
           serialNumber: 'SN-2026-CRAFT-092',
         ),
         OrderModel(
@@ -405,6 +409,8 @@ class MockData {
           dpProofPath: 'bukti_dp_barista_utama.jpg',
           deliveryAddress: 'Jl. Riau No. 112, Bandung, Jawa Barat',
           customNotes: 'Tipe gas LPG 380V dengan custom warna Matte Black Finish.',
+          buyerPhone: '+62 811-2233-4455',
+          buyerEmail: 'rina.sugiarto@baristautama.co.id',
           serialNumber: 'SN-2026-VORTEX-5KG',
         ),
         OrderModel(
@@ -426,6 +432,8 @@ class MockData {
           pelunasanProofPath: null, // Siap upload pelunasan!
           deliveryAddress: 'Jl. Sunset Road No. 88, Kuta, Bali',
           customNotes: 'Pemberitahuan: Pesanan telah lulus uji QC 100 Bar. Silakan lakukan pelunasan.',
+          buyerPhone: '+62 813-8899-7711',
+          buyerEmail: 'wayan.sukarsa@kenanganindah.com',
           serialNumber: 'SN-2026-AROMA-3G',
         ),
         OrderModel(
@@ -447,6 +455,8 @@ class MockData {
           pelunasanProofPath: 'bukti_pelunasan_titan.jpg',
           deliveryAddress: 'Jl. Sudirman No. 45, Jakarta Selatan',
           customNotes: 'Unit telah terpasang dan beroperasi penuh. Garansi resmi 2 tahun aktif hingga Sep 2028.',
+          buyerPhone: '+62 812-9876-5432',
+          buyerEmail: 'hendra.wijaya@kopinusantara.id',
           serialNumber: 'SN-2026-TITAN-881',
         ),
       ];

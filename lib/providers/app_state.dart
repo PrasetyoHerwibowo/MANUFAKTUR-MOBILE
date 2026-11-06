@@ -400,6 +400,8 @@ class AppState extends ChangeNotifier {
       dpProofPath: proofPath,
       deliveryAddress: deliveryAddress,
       customNotes: customNotes,
+      imageUrl: product.imageUrl,
+      description: product.description,
     );
 
     _orders.insert(0, newOrder);
@@ -644,5 +646,11 @@ class AppState extends ChangeNotifier {
       _notifications[idx].isRead = true;
       notifyListeners();
     }
+  }
+}
+
+  void clearAllNotifications() {
+    _notifications.clear();
+    notifyListeners();
   }
 }
