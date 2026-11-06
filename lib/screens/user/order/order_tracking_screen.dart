@@ -6,9 +6,8 @@ import '../../../core/models/order_model.dart';
 import '../../../core/models/custom_order_model.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/status_badge.dart';
-import '../../../widgets/pdf_preview_dialog.dart';
-import '../info/contact_whatsapp_screen.dart';
 import 'order_detail_screen.dart';
+import 'rfq_detail_screen.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   const OrderTrackingScreen({super.key});
@@ -20,11 +19,19 @@ class OrderTrackingScreen extends StatefulWidget {
 class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  int _currentTab = 0;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging && _tabController.index != _currentTab) {
+        setState(() {
+          _currentTab = _tabController.index;
+        });
+      }
+    });
   }
 
   @override
@@ -37,17 +44,46 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
     return "Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}";
   }
 
-  String? _resolveProductImage(AppState appState, OrderModel order) {
+  String _resolveProductImage(AppState appState, OrderModel order) {
     if (order.imageUrl != null && order.imageUrl!.isNotEmpty) {
-      return order.imageUrl;
+      return order.imageUrl!;
     }
+    final nameLower = order.productName.toLowerCase();
+    final catLower = order.category.toLowerCase();
     final matches = appState.products.where(
       (p) =>
-          p.name.toLowerCase().contains(order.productName.toLowerCase()) ||
-          order.productName.toLowerCase().contains(p.name.toLowerCase()),
+          p.name.toLowerCase().contains(nameLower) ||
+          nameLower.contains(p.name.toLowerCase()),
     );
-    if (matches.isNotEmpty) return matches.first.imageUrl;
-    return null;
+    if (matches.isNotEmpty && matches.first.imageUrl.isNotEmpty) {
+      return matches.first.imageUrl;
+    }
+
+    if (nameLower.contains('espresso') || catLower.contains('espresso')) {
+      return 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&auto=format&fit=crop&q=80';
+    } else if (nameLower.contains('roast') || catLower.contains('roast')) {
+      return 'https://images.unsplash.com/photo-1518832553480-cd0e625ed3e6?w=800&auto=format&fit=crop&q=80';
+    } else if (nameLower.contains('grind') || catLower.contains('grind')) {
+      return 'https://images.unsplash.com/photo-1589396575653-c09c794ff6a6?w=800&auto=format&fit=crop&q=80';
+    } else if (nameLower.contains('pulper') || catLower.contains('pulper') || nameLower.contains('pengolahan')) {
+      return 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80';
+    }
+    return 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80';
+  }
+
+  String _resolveRfqImage(CustomOrderModel rfq) {
+    if (rfq.imageUrl != null && rfq.imageUrl!.isNotEmpty) {
+      return rfq.imageUrl!;
+    }
+    final typeLower = rfq.machineType.toLowerCase();
+    if (typeLower.contains('espresso')) {
+      return 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&auto=format&fit=crop&q=80';
+    } else if (typeLower.contains('roast')) {
+      return 'https://images.unsplash.com/photo-1518832553480-cd0e625ed3e6?w=800&auto=format&fit=crop&q=80';
+    } else if (typeLower.contains('grind')) {
+      return 'https://images.unsplash.com/photo-1589396575653-c09c794ff6a6?w=800&auto=format&fit=crop&q=80';
+    }
+    return 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80';
   }
 
   @override
@@ -59,94 +95,171 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(48),
-        child: Container(
-          color: isDark ? AppColors.darkSurface : Colors.white,
-          child: TabBar(
-            controller: _tabController,
-            indicatorColor: AppColors.secondary,
-            indicatorWeight: 3,
-            labelColor: AppColors.secondary,
-            unselectedLabelColor: isDark ? Colors.white60 : AppColors.textMuted,
-            labelStyle: GoogleFonts.plusJakartaSans(
-              fontSize: 12.5,
-              fontWeight: FontWeight.bold,
-            ),
-            unselectedLabelStyle: GoogleFonts.plusJakartaSans(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w500,
-            ),
-            tabs: [
-              Tab(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.precision_manufacturing_outlined, size: 16),
-                      const SizedBox(width: 6),
-                      Text("Pesanan Mesin (${allOrders.length})"),
-                    ],
-                  ),
-                ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Modern Segmented Capsule Switcher matching Home and Servis design system
+            _buildTopSegmentedTabs(appState, isDark),
+
+            // Tab Views
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // TAB 1: Standar PO Orders
+                  allOrders.isEmpty
+                      ? _buildEmptyState(
+                          icon: Icons.inventory_2_outlined,
+                          title: "Belum Ada Pesanan Mesin",
+                          message: "Anda belum memiliki transaksi Purchase Order (PO) mesin saat ini.",
+                          isDark: isDark,
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: allOrders.length,
+                          itemBuilder: (context, index) {
+                            final order = allOrders[index];
+                            return _buildPoCard(context, appState, order, isDark);
+                          },
+                        ),
+
+                  // TAB 2: Custom RFQ Orders
+                  rfqOrders.isEmpty
+                      ? _buildEmptyState(
+                          icon: Icons.settings_suggest_outlined,
+                          title: "Belum Ada Pengajuan Custom RFQ",
+                          message: "Pengajuan spesifikasi custom mesin Anda akan tampil di sini.",
+                          isDark: isDark,
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: rfqOrders.length,
+                          itemBuilder: (context, index) {
+                            final rfq = rfqOrders[index];
+                            return _buildRfqCard(context, rfq, isDark);
+                          },
+                        ),
+                ],
               ),
-              Tab(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.design_services_outlined, size: 16),
-                      const SizedBox(width: 6),
-                      Text("Custom RFQ (${rfqOrders.length})"),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Modern Segmented Capsule Switcher (Smooth, Gentle on Eyes, matching BookingServiceScreen)
+  Widget _buildTopSegmentedTabs(AppState appState, bool isDark) {
+    final allOrders = appState.orders;
+    final rfqOrders = appState.customOrders;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? Colors.white10 : const Color(0xFFE5E7EB),
+            width: 1,
           ),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          // TAB 1: Standar PO Orders
-          allOrders.isEmpty
-              ? _buildEmptyState(
-                  icon: Icons.inventory_2_outlined,
-                  title: "Belum Ada Pesanan Mesin",
-                  message: "Anda belum memiliki transaksi Purchase Order (PO) mesin saat ini.",
-                  isDark: isDark,
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: allOrders.length,
-                  itemBuilder: (context, index) {
-                    final order = allOrders[index];
-                    return _buildPoCard(context, appState, order, isDark);
-                  },
-                ),
+      child: Container(
+        height: 42,
+        padding: const EdgeInsets.all(3.5),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildTopTabButton(
+                index: 0,
+                icon: Icons.precision_manufacturing_outlined,
+                activeIcon: Icons.precision_manufacturing_rounded,
+                label: "Pesanan Mesin (${allOrders.length})",
+                isDark: isDark,
+              ),
+            ),
+            Expanded(
+              child: _buildTopTabButton(
+                index: 1,
+                icon: Icons.design_services_outlined,
+                activeIcon: Icons.design_services_rounded,
+                label: "Custom RFQ (${rfqOrders.length})",
+                isDark: isDark,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // TAB 2: Custom RFQ Orders
-          rfqOrders.isEmpty
-              ? _buildEmptyState(
-                  icon: Icons.settings_suggest_outlined,
-                  title: "Belum Ada Pengajuan Custom RFQ",
-                  message: "Pengajuan spesifikasi custom mesin Anda akan tampil di sini.",
-                  isDark: isDark,
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: rfqOrders.length,
-                  itemBuilder: (context, index) {
-                    final rfq = rfqOrders[index];
-                    return _buildRfqCard(context, rfq, isDark);
-                  },
+  Widget _buildTopTabButton({
+    required int index,
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+    required bool isDark,
+  }) {
+    final isSelected = _currentTab == index;
+    final activeBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final activeFg = isDark ? Colors.white : const Color(0xFF0F172A);
+    final inactiveFg = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _currentTab = index;
+          _tabController.animateTo(index);
+        });
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        decoration: BoxDecoration(
+          color: isSelected ? activeBg : Colors.transparent,
+          borderRadius: BorderRadius.circular(9),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1.5),
+                  ),
+                ]
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isSelected ? activeIcon : icon,
+              size: 15,
+              color: isSelected ? activeFg : inactiveFg,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: isSelected ? activeFg : inactiveFg,
                 ),
-        ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -196,13 +309,13 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.12),
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.description_rounded,
                     size: 16,
-                    color: AppColors.secondary,
+                    color: isDark ? Colors.white70 : const Color(0xFF475569),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -249,19 +362,17 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Machine Thumbnail
+                      // Machine Thumbnail (Menampilkan Foto Mesin Nyata seperti sebelumnya)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: imageUrl != null
-                            ? Image.network(
-                                imageUrl,
-                                width: 84,
-                                height: 84,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    _buildPlaceholderImage(isDark),
-                              )
-                            : _buildPlaceholderImage(isDark),
+                        child: Image.network(
+                          imageUrl,
+                          width: 84,
+                          height: 84,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildPlaceholderImage(isDark),
+                        ),
                       ),
                       const SizedBox(width: 14),
 
@@ -273,15 +384,19 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                               decoration: BoxDecoration(
-                                color: AppColors.secondary.withValues(alpha: 0.12),
+                                color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
                                 borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                                  width: 0.6,
+                                ),
                               ),
                               child: Text(
                                 order.category.toUpperCase(),
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.secondary,
+                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
                                 ),
                               ),
                             ),
@@ -420,7 +535,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                 Divider(color: isDark ? Colors.white10 : AppColors.border),
                 const SizedBox(height: 8),
 
-                // Total Tagihan & Action Button
+                // Total Tagihan & Action Button (Mengikuti Tema Home & Servis)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -441,7 +556,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                             style: GoogleFonts.outfit(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.secondary,
+                              color: isDark ? Colors.white : AppColors.primary,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -470,7 +585,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                     ),
                     const SizedBox(width: 8),
 
-                    // Hanya tombol Detail Pesanan
+                    // Tombol Detail Pesanan (Kontras tinggi di dark mode agar tidak menyatu)
                     ElevatedButton(
                       onPressed: () {
                         Navigator.push(
@@ -483,9 +598,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                       style: ElevatedButton.styleFrom(
                         backgroundColor: order.status == OrderStatus.menungguPelunasan
                             ? AppColors.warning
-                            : AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
+                            : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                        foregroundColor: order.status == OrderStatus.menungguPelunasan
+                            ? Colors.white
+                            : (isDark ? const Color(0xFF0F172A) : Colors.white),
+                        elevation: isDark ? 2 : 0,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -523,11 +640,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
       width: 76,
       height: 76,
       color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
-      child: const Center(
+      child: Center(
         child: Icon(
           Icons.precision_manufacturing_rounded,
           size: 30,
-          color: AppColors.secondary,
+          color: isDark ? Colors.white70 : const Color(0xFF475569),
         ),
       ),
     );
@@ -580,13 +697,13 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: AppColors.secondary.withValues(alpha: 0.12),
+                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.description_rounded,
                           size: 16,
-                          color: AppColors.secondary,
+                          color: isDark ? Colors.white70 : const Color(0xFF475569),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -632,19 +749,33 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
               children: [
                 // Info Mesin yang Dipesan
                 InkWell(
-                  onTap: () => _showRfqDetailSheet(context, rfq, isDark),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => RfqDetailScreen(rfq: rfq),
+                      ),
+                    );
+                  },
                   borderRadius: BorderRadius.circular(12),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Machine Thumbnail
+                      // Machine Thumbnail (Menampilkan Foto Mesin Nyata seperti sebelumnya)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: _buildPlaceholderImage(isDark),
+                        child: Image.network(
+                          _resolveRfqImage(rfq),
+                          width: 84,
+                          height: 84,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildPlaceholderImage(isDark),
+                        ),
                       ),
                       const SizedBox(width: 14),
 
-                      // Machine details (Clean & Tidak Ramai)
+                      // Machine details (Clean & Sesuai Desain Home/Servis)
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -768,7 +899,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                 Divider(color: isDark ? Colors.white10 : AppColors.border),
                 const SizedBox(height: 8),
 
-                // Total Tagihan / Budget & Action Button (Bersih & Lega)
+                // Total Tagihan / Budget & Action Button (Sesuai Tema Home & Servis)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -791,7 +922,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                             style: GoogleFonts.outfit(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.secondary,
+                              color: isDark ? Colors.white : AppColors.primary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -813,15 +944,20 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                     ),
                     const SizedBox(width: 8),
 
-                    // Tombol Detail Custom
+                    // Tombol Detail Custom (Kontras tinggi di dark mode agar tidak menyatu)
                     ElevatedButton(
                       onPressed: () {
-                        _showRfqDetailSheet(context, rfq, isDark);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RfqDetailScreen(rfq: rfq),
+                          ),
+                        );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
+                        backgroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
+                        foregroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+                        elevation: isDark ? 2 : 0,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -849,413 +985,6 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
           ),
         ],
       ),
-    );
-  }
-
-  void _showRfqDetailSheet(
-      BuildContext context, CustomOrderModel rfq, bool isDark) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: EdgeInsets.only(
-            top: 16,
-            left: 20,
-            right: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white24 : Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          rfq.rfqNumber,
-                          style: GoogleFonts.outfit(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : AppColors.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        CustomOrderStatusBadge(status: rfq.status),
-                      ],
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 20),
-                      onPressed: () => Navigator.pop(context),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-                Text(
-                  "Tanggal Pengajuan: ${rfq.requestDate}",
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Divider(color: isDark ? Colors.white10 : AppColors.border),
-                const SizedBox(height: 12),
-                Text(
-                  "Mesin Custom yang Diajukan:",
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white70 : AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  rfq.machineType,
-                  style: GoogleFonts.outfit(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isDark ? Colors.white10 : AppColors.border,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildDetailItem(
-                        icon: Icons.speed_rounded,
-                        label: "Target Kapasitas",
-                        value: rfq.targetCapacity,
-                        isDark: isDark,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildDetailItem(
-                        icon: Icons.bolt_rounded,
-                        label: "Spesifikasi Listrik",
-                        value: rfq.electricalSpecs,
-                        isDark: isDark,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildDetailItem(
-                        icon: Icons.payments_outlined,
-                        label: "Estimasi Budget",
-                        value: rfq.budgetRange,
-                        isDark: isDark,
-                      ),
-                      const SizedBox(height: 8),
-                      _buildDetailItem(
-                        icon: Icons.calendar_today_outlined,
-                        label: "Target Pengiriman",
-                        value: rfq.targetDeliveryDate,
-                        isDark: isDark,
-                      ),
-                    ],
-                  ),
-                ),
-                if (rfq.customFeatures.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    "Fitur Khusus / Custom:",
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white70 : AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.03)
-                          : const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
-                      ),
-                    ),
-                    child: Text(
-                      rfq.customFeatures,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        height: 1.4,
-                        color: isDark ? Colors.white70 : AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                ],
-                if (rfq.attachmentFileName != null &&
-                    rfq.attachmentFileName!.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.02)
-                          : const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.attach_file_rounded,
-                            size: 16, color: Color(0xFF64748B)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "Blueprint: ${rfq.attachmentFileName!}",
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.02)
-                        : const Color(0xFFFAFAFA),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                        color: isDark ? Colors.white10 : AppColors.border),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.business_rounded,
-                              size: 15, color: Color(0xFF64748B)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              rfq.companyName,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(Icons.person_outline_rounded,
-                              size: 15, color: Color(0xFF64748B)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              "${rfq.contactPerson}  •  ${rfq.phone}",
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                color: isDark
-                                    ? AppColors.darkTextSecondary
-                                    : AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                if (rfq.quotationPrice != null) ...[
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isDark ? Colors.white12 : const Color(0xFFCBD5E1),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Surat Penawaran Resmi Pabrik:",
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark
-                                          ? AppColors.darkTextSecondary
-                                          : AppColors.textMuted,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 1),
-                                  Text(
-                                    rfq.quotationPrice!,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 16.5,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.secondary,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            OutlinedButton.icon(
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => PdfPreviewModal(
-                                    title: "Surat Penawaran Resmi (Quotation)",
-                                    subtitle: rfq.rfqNumber,
-                                    pdfType: "QUOTATION",
-                                    data: {
-                                      'rfqNumber': rfq.rfqNumber,
-                                      'company': rfq.companyName,
-                                      'productName': rfq.machineType,
-                                      'total': rfq.quotationPrice,
-                                    },
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.picture_as_pdf_outlined,
-                                  size: 14),
-                              label: const Text("Lihat PDF"),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (rfq.quotationNotes != null &&
-                            rfq.quotationNotes!.isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            "Catatan: ${rfq.quotationNotes!}",
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11,
-                              color: isDark
-                                  ? AppColors.darkTextSecondary
-                                  : AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ContactWhatsappScreen(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.support_agent_rounded, size: 18),
-                    label: const Text("KONSULTASI TIM TEKNIK"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildDetailItem({
-    required IconData icon,
-    required String label,
-    required String value,
-    required bool isDark,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 15, color: const Color(0xFF64748B)),
-        const SizedBox(width: 8),
-        Text(
-          "$label: ",
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 11,
-            color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white : AppColors.textPrimary,
-            ),
-          ),
-        ),
-      ],
     );
   }
 

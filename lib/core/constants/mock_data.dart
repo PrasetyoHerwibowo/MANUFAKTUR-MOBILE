@@ -368,6 +368,7 @@ class MockData {
           buyerPhone: '+62 812-9876-5432',
           buyerEmail: 'hendra.wijaya@kopinusantara.id',
           serialNumber: 'SN-2026-MDI-PL200-01',
+          imageUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80',
         ),
         OrderModel(
           id: 'ORD-101',
@@ -390,6 +391,7 @@ class MockData {
           buyerPhone: '+62 812-9876-5432',
           buyerEmail: 'hendra.wijaya@kopinusantara.id',
           serialNumber: 'SN-2026-CRAFT-092',
+          imageUrl: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&auto=format&fit=crop&q=80',
         ),
         OrderModel(
           id: 'ORD-102',
@@ -412,6 +414,7 @@ class MockData {
           buyerPhone: '+62 811-2233-4455',
           buyerEmail: 'rina.sugiarto@baristautama.co.id',
           serialNumber: 'SN-2026-VORTEX-5KG',
+          imageUrl: 'https://images.unsplash.com/photo-1518832553480-cd0e625ed3e6?w=800&auto=format&fit=crop&q=80',
         ),
         OrderModel(
           id: 'ORD-103',
@@ -435,6 +438,7 @@ class MockData {
           buyerPhone: '+62 813-8899-7711',
           buyerEmail: 'wayan.sukarsa@kenanganindah.com',
           serialNumber: 'SN-2026-AROMA-3G',
+          imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80',
         ),
         OrderModel(
           id: 'ORD-104',
@@ -458,6 +462,7 @@ class MockData {
           buyerPhone: '+62 812-9876-5432',
           buyerEmail: 'hendra.wijaya@kopinusantara.id',
           serialNumber: 'SN-2026-TITAN-881',
+          imageUrl: 'https://images.unsplash.com/photo-1589396575653-c09c794ff6a6?w=800&auto=format&fit=crop&q=80',
         ),
       ];
 
@@ -477,6 +482,7 @@ class MockData {
           targetDeliveryDate: '15 Nov 2026',
           requestDate: '01 Okt 2026',
           status: CustomOrderStatus.dalamReview,
+          imageUrl: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&auto=format&fit=crop&q=80',
         ),
         CustomOrderModel(
           id: 'RFQ-502',
@@ -495,6 +501,7 @@ class MockData {
           status: CustomOrderStatus.quotationTerkirim,
           quotationPrice: 'Rp 445.000.000',
           quotationNotes: 'Penawaran mencakup garansi 2 tahun & instalasi ducting afterburner.',
+          imageUrl: 'https://images.unsplash.com/photo-1518832553480-cd0e625ed3e6?w=800&auto=format&fit=crop&q=80',
         ),
       ];
 

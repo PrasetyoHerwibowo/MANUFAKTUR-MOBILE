@@ -153,11 +153,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       width: double.infinity,
                       height: 180,
                       color: isDark ? AppColors.darkBackground : const Color(0xFFF1F5F9),
-                      child: const Center(
+                      child: Center(
                         child: Icon(
                           Icons.precision_manufacturing_rounded,
                           size: 48,
-                          color: AppColors.secondary,
+                          color: isDark ? Colors.white70 : const Color(0xFF475569),
                         ),
                       ),
                     ),
@@ -176,15 +176,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                               decoration: BoxDecoration(
-                                color: AppColors.secondary.withValues(alpha: 0.12),
+                                color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
                                 borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                                  width: 0.6,
+                                ),
                               ),
                               child: Text(
                                 o.category.toUpperCase(),
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.secondary,
+                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -243,7 +247,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                               fontSize: 10.5,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.5,
-                              color: AppColors.secondary,
+                              color: isDark ? Colors.white70 : const Color(0xFF475569),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -301,13 +305,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
-                                    color: AppColors.secondary.withValues(alpha: 0.12),
+                                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.description_rounded,
                                     size: 18,
-                                    color: AppColors.secondary,
+                                    color: isDark ? Colors.white70 : const Color(0xFF475569),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -809,7 +813,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         style: GoogleFonts.outfit(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
-                          color: AppColors.secondary,
+                          color: isDark ? Colors.white : AppColors.primary,
                         ),
                       ),
                     ],
@@ -837,9 +841,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         );
                       },
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.secondary,
-                        side: const BorderSide(color: AppColors.secondary),
-                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        foregroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
+                        side: BorderSide(
+                          color: isDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -954,7 +960,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppColors.secondary),
+          Icon(icon, size: 14, color: isDark ? Colors.white70 : const Color(0xFF475569)),
           const SizedBox(width: 5),
           Text(
             "$label: ",
@@ -1051,6 +1057,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   void _showPelunasanModal(
       BuildContext context, AppState appState, OrderModel order) {
+    final isDark = appState.isDarkMode;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1087,7 +1094,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 "Jumlah Pelunasan (50%): Rp ${order.pelunasanAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}",
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.secondary,
+                  color: isDark ? Colors.white : AppColors.primary,
                   fontSize: 13,
                 ),
               ),
@@ -1164,6 +1171,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     appState.uploadPelunasanProof(order.id, proof);
                     Navigator.pop(context);
                   },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
+                    foregroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                   child: const Text("KONFIRMASI UPLOAD PELUNASAN"),
                 ),
               ),
