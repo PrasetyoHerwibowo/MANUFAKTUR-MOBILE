@@ -20,6 +20,11 @@ class OrderStatusBadge extends StatelessWidget {
         fg = const Color(0xFFE65100);
         text = "Verifikasi DP";
         break;
+      case OrderStatus.dpDitolak:
+        bg = const Color(0xFFFFEBEE);
+        fg = const Color(0xFFC62828);
+        text = "Bukti DP Ditolak";
+        break;
       case OrderStatus.persiapanBahan:
         bg = const Color(0xFFE1F5FE);
         fg = const Color(0xFF0288D1);
@@ -39,6 +44,16 @@ class OrderStatusBadge extends StatelessWidget {
         bg = const Color(0xFFFFF8E1);
         fg = const Color(0xFFF57F17);
         text = "Menunggu Pelunasan (50%)";
+        break;
+      case OrderStatus.verifikasiPelunasan:
+        bg = const Color(0xFFE0F2FE);
+        fg = const Color(0xFF0284C7);
+        text = "Verifikasi Pelunasan";
+        break;
+      case OrderStatus.pelunasanDitolak:
+        bg = const Color(0xFFFFEBEE);
+        fg = const Color(0xFFC62828);
+        text = "Bukti Pelunasan Ditolak";
         break;
       case OrderStatus.pengirimanInstalasi:
         bg = const Color(0xFFE8F5E9);

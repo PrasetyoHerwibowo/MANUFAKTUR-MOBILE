@@ -64,7 +64,7 @@ class PaymentHistoryScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "RINGKASAN PEMBAYARAN B2B",
+                      "RINGKASAN PEMBAYARAN",
                       style: GoogleFonts.outfit(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,

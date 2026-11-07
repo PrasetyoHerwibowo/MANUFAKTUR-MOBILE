@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+
 import '../../../providers/app_state.dart';
 import '../../../core/theme/app_colors.dart';
 import 'register_screen.dart';
@@ -15,7 +16,9 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController(text: 'budi.santoso@gmail.com');
+  final _emailController = TextEditingController(
+    text: 'budi.santoso@gmail.com',
+  );
   final _passwordController = TextEditingController(text: '12345678');
   bool _obscurePassword = true;
   bool _rememberMe = true;
@@ -73,7 +76,10 @@ class _LoginScreenState extends State<LoginScreen> {
         // Akun belum aktif -> arahkan ke halaman input 10 digit kode
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(res['message'] ?? "Akun belum aktif. Masukkan kode 10 digit verifikasi."),
+            content: Text(
+              res['message'] ??
+                  "Akun belum aktif. Masukkan kode 10 digit verifikasi.",
+            ),
             backgroundColor: AppColors.warning,
           ),
         );
@@ -81,15 +87,16 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ActivationCodeScreen(
-              email: email,
-            ),
+            builder: (context) => ActivationCodeScreen(email: email),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(res['message'] ?? "Email atau kata sandi yang Anda masukkan salah."),
+            content: Text(
+              res['message'] ??
+                  "Email atau kata sandi yang Anda masukkan salah.",
+            ),
             backgroundColor: AppColors.error,
           ),
         );
@@ -108,18 +115,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _showGoogleAccountPicker(BuildContext context, AppState appState) {
     final googleAccounts = [
-      {
-        'name': 'Budi Santoso',
-        'email': 'budi.santoso@gmail.com',
-      },
-      {
-        'name': 'Hendra Wijaya',
-        'email': 'hendrawijaya.kopi@gmail.com',
-      },
-      {
-        'name': 'Rina Wijaya',
-        'email': 'rina.wijaya@gmail.com',
-      },
+      {'name': 'Budi Santoso', 'email': 'budi.santoso@gmail.com'},
+      {'name': 'Hendra Wijaya', 'email': 'hendrawijaya.kopi@gmail.com'},
+      {'name': 'Rina Wijaya', 'email': 'rina.wijaya@gmail.com'},
     ];
 
     showModalBottomSheet(
@@ -162,14 +160,18 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: GoogleFonts.outfit(
                             fontSize: 17,
                             fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : AppColors.textPrimary,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.textPrimary,
                           ),
                         ),
                         Text(
                           "Lanjutkan ke aplikasi Manufaktur",
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
-                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.textSecondary,
                           ),
                         ),
                       ],
@@ -191,9 +193,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurface : AppColors.surfaceVariant,
+                        color: isDark
+                            ? AppColors.darkSurface
+                            : AppColors.surfaceVariant,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isDark ? Colors.white10 : AppColors.border,
@@ -222,14 +229,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: GoogleFonts.plusJakartaSans(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 13,
-                                    color: isDark ? Colors.white : AppColors.textPrimary,
+                                    color: isDark
+                                        ? Colors.white
+                                        : AppColors.textPrimary,
                                   ),
                                 ),
                                 Text(
                                   acc['email']!,
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 11.5,
-                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                    color: isDark
+                                        ? AppColors.darkTextSecondary
+                                        : AppColors.textSecondary,
                                   ),
                                 ),
                               ],
@@ -257,7 +268,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 label: const Text("Gunakan akun lain"),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 44),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -335,12 +348,18 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 18),
               Text(
                 "Menghubungkan ke Google...",
-                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15),
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
                 email,
-                style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppColors.textSecondary),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -437,7 +456,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurface : const Color(0xFFFEE2E2),
+                    color: isDark
+                        ? AppColors.darkSurface
+                        : const Color(0xFFFEE2E2),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Center(
@@ -464,7 +485,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   "Masuk untuk melanjutkan ke akun Anda",
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -502,9 +525,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: TextStyle(color: isDark ? Colors.white : AppColors.textPrimary),
+                        style: TextStyle(
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                        ),
                         decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.mail_outline_rounded, size: 20),
+                          prefixIcon: Icon(
+                            Icons.mail_outline_rounded,
+                            size: 20,
+                          ),
                           hintText: "nama@email.com",
                         ),
                       ),
@@ -523,9 +551,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
-                        style: TextStyle(color: isDark ? Colors.white : AppColors.textPrimary),
+                        style: TextStyle(
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                        ),
                         decoration: InputDecoration(
-                          prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                          prefixIcon: const Icon(
+                            Icons.lock_outline_rounded,
+                            size: 20,
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
@@ -571,7 +604,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 "Ingat Saya",
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 12,
-                                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                                  color: isDark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.textSecondary,
                                 ),
                               ),
                             ],
@@ -581,7 +616,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const ForgotPasswordScreen(),
+                                  builder: (context) =>
+                                      const ForgotPasswordScreen(),
                                 ),
                               );
                             },
@@ -608,7 +644,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : () => _handleManualLogin(appState),
+                          onPressed: _isLoading
+                              ? null
+                              : () => _handleManualLogin(appState),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.secondary,
                             shape: RoundedRectangleBorder(
@@ -653,7 +691,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.textMuted,
                               ),
                             ),
                           ),
@@ -668,13 +708,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // Google OAuth Only Button
                       InkWell(
-                        onTap: () => _showGoogleAccountPicker(context, appState),
+                        onTap: () =>
+                            _showGoogleAccountPicker(context, appState),
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
                           width: double.infinity,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: isDark ? AppColors.darkSurface : Colors.white,
+                            color: isDark
+                                ? AppColors.darkSurface
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isDark ? Colors.white12 : AppColors.border,
@@ -697,7 +740,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white : AppColors.textPrimary,
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppColors.textPrimary,
                                 ),
                               ),
                             ],
@@ -716,7 +761,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       "Belum memiliki akun? ",
                       style: GoogleFonts.plusJakartaSans(
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.textSecondary,
                         fontSize: 13,
                       ),
                     ),

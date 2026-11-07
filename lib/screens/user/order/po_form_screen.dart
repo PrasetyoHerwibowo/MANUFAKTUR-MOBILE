@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -400,12 +403,12 @@ class _PoFormScreenState extends State<PoFormScreen> {
 
                   // Bank Mandiri Card
                   _buildBankOption(
-                    bankCode: 'Mandiri B2B (137-0099-221)',
-                    bankTitle: 'Bank Mandiri B2B',
+                    bankCode: 'Mandiri (137-0099-221)',
+                    bankTitle: 'Bank Mandiri',
                     accountNumber: '137-0099-221',
                     accountName: 'PT Manufactur Dynamic Indonesia',
                     isSelected: _selectedBank.contains('Mandiri'),
-                    onSelect: () => setState(() => _selectedBank = 'Mandiri B2B (137-0099-221)'),
+                    onSelect: () => setState(() => _selectedBank = 'Mandiri (137-0099-221)'),
                     onCopy: () => _copyToClipboard('1370099221', 'No. Rekening Mandiri'),
                     isDark: isDark,
                     brandColor: brandColor,
@@ -436,6 +439,7 @@ class _PoFormScreenState extends State<PoFormScreen> {
                           fileName: _uploadedProofName!,
                           amount: dp50,
                           bankAccount: _selectedBank,
+                          uploadResult: _uploadedProof,
                           isDark: isDark,
                           brandColor: brandColor,
                         );
@@ -473,24 +477,32 @@ class _PoFormScreenState extends State<PoFormScreen> {
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(10),
+                            width: 44,
+                            height: 44,
                             decoration: BoxDecoration(
                               color: _uploadedProofName != null
                                   ? const Color(0xFF10B981).withValues(alpha: 0.15)
                                   : (isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
-                              _uploadedProofName != null
-                                  ? (_uploadedProof?.sourceType == UploadSourceType.document
-                                      ? Icons.picture_as_pdf_rounded
-                                      : Icons.check_circle_rounded)
-                                  : Icons.cloud_upload_outlined,
-                              color: _uploadedProofName != null
-                                  ? const Color(0xFF10B981)
-                                  : brandColor,
-                              size: 22,
-                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: _uploadedProof != null && _uploadedProof!.isImage && _uploadedProof!.fileBytes != null
+                                ? Image.memory(_uploadedProof!.fileBytes!, fit: BoxFit.cover)
+                                : (_uploadedProof != null && _uploadedProof!.isImage && _uploadedProof!.filePath != null && !kIsWeb && File(_uploadedProof!.filePath!).existsSync())
+                                    ? Image.file(File(_uploadedProof!.filePath!), fit: BoxFit.cover)
+                                    : Center(
+                                        child: Icon(
+                                          _uploadedProofName != null
+                                              ? (_uploadedProof?.sourceType == UploadSourceType.document
+                                                  ? Icons.picture_as_pdf_rounded
+                                                  : Icons.check_circle_rounded)
+                                              : Icons.cloud_upload_outlined,
+                                          color: _uploadedProofName != null
+                                              ? const Color(0xFF10B981)
+                                              : brandColor,
+                                          size: 22,
+                                        ),
+                                      ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -577,6 +589,7 @@ class _PoFormScreenState extends State<PoFormScreen> {
                               fileName: _uploadedProofName!,
                               amount: dp50,
                               bankAccount: _selectedBank,
+                              uploadResult: _uploadedProof,
                               isDark: isDark,
                               brandColor: brandColor,
                             );
@@ -685,21 +698,88 @@ class _PoFormScreenState extends State<PoFormScreen> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () {
-                    final proof = _uploadedProofName ?? 'bukti_transfer_${_selectedBank.contains('BCA') ? 'bca' : 'mandiri'}.jpg';
+                  onPressed: () async {
+                    if (_uploadedProof == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Harap pilih bukti transfer DP 50% terlebih dahulu (kamera, galeri, atau PDF)."),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                      return;
+                    }
 
-                    appState.createStandardPO(
+                    Uint8List? bytes = _uploadedProof!.fileBytes;
+                    if (bytes == null && _uploadedProof!.filePath != null) {
+                      try {
+                        bytes = await File(_uploadedProof!.filePath!).readAsBytes();
+                      } catch (_) {}
+                    }
+
+                    String proof = _uploadedProofName ?? 'bukti_dp.jpg';
+                    if (bytes != null) {
+                      final name = _uploadedProof!.fileName.toLowerCase();
+                      String mime = 'jpeg';
+                      if (name.endsWith('.png')) mime = 'png';
+                      else if (name.endsWith('.webp')) mime = 'webp';
+                      else if (name.endsWith('.pdf')) mime = 'pdf';
+
+                      final prefix = mime == 'pdf' ? 'data:application/pdf;base64,' : 'data:image/$mime;base64,';
+                      proof = '$prefix${base64Encode(bytes)}';
+                    }
+
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (ctx) => Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.darkSurface : Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircularProgressIndicator(color: brandColor),
+                              const SizedBox(height: 14),
+                              Text(
+                                "Menerbitkan Purchase Order...",
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: textColor,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "Menyimpan bukti DP ke Supabase",
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  color: subtextColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+
+                    await appState.createStandardPO(
                       product: p,
                       quantity: _quantity,
                       deliveryAddress: _addressController.text.trim().isEmpty
-                          ? 'Kawasan Industri MM2100, Cikarang Barat'
+                          ? 'Kawasan Industri MM2100 Blok C-4, Cikarang Barat, Bekasi'
                           : _addressController.text.trim(),
                       customNotes: _engravingController.text.trim(),
                       bankAccount: _selectedBank,
                       proofPath: proof,
                     );
 
-                    _showSuccessDialog(context, p, dp50, isDark, brandColor);
+                    if (context.mounted) {
+                      Navigator.pop(context); // Close loading dialog
+                      _showSuccessDialog(context, p, dp50, isDark, brandColor);
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: brandColor,
@@ -848,6 +928,7 @@ class _PoFormScreenState extends State<PoFormScreen> {
     bool isDark,
     Color brandColor,
   ) {
+    final appState = Provider.of<AppState>(context, listen: false);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -929,8 +1010,9 @@ class _PoFormScreenState extends State<PoFormScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pop(ctx); // Close dialog
-                    Navigator.pop(context); // Back to previous screen
+                    appState.setUserTabIndex(1); // Navigasikan langsung ke Halaman Pesanan
+                    Navigator.pop(ctx); // Tutup dialog sukses
+                    Navigator.of(context).popUntil((route) => route.isFirst); // Kembali ke Root Main Layout (Tab Pesanan)
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: brandColor,

@@ -573,11 +573,18 @@ class _WarrantyClaimScreenState extends State<WarrantyClaimScreen> {
               _buildInputLabel("Lampiran Bukti Foto / Dokumen Unit", isDark),
               InkWell(
                 onTap: () async {
-                  final name = await FilePickerHelper.pickFileName();
-                  setState(() {
-                    _uploadedPhotoName =
-                        name ?? 'foto_kerusakan_display_grinder.jpg';
-                  });
+                  final result = await FilePickerHelper.showUploadSourceSheet(
+                    context: context,
+                    title: "Unggah Foto / Dokumen Kerusakan",
+                    subtitle: "Ambil foto langsung kamera, pilih galeri, atau lampirkan dokumen",
+                    isDark: isDark,
+                    brandColor: const Color(0xFF047857),
+                  );
+                  if (result != null) {
+                    setState(() {
+                      _uploadedPhotoName = result.fileName;
+                    });
+                  }
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: Container(

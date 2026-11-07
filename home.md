@@ -1,6 +1,6 @@
 # Dokumentasi Perubahan, Penyederhanaan & Perapihan (MANUFAKTUR-MOBILE)
 
-Dokumen ini mencatat seluruh riwayat perbaikan, refactoring, penyederhanaan antarmuka (*UI/UX*), kurasi dataset mesin pabrik, eliminasi redundansi data, kepatuhan model bisnis (*100% Pre-Order*), perbaikan overflow layar, dan dukungan penuh Dark Mode pada aplikasi **PT Manufactur Dynamic Indonesia** (B2B Coffee & Cocoa Machinery Mobile Application).
+Dokumen ini mencatat seluruh riwayat perbaikan, refactoring, penyederhanaan antarmuka (*UI/UX*), kurasi dataset mesin pabrik, eliminasi redundansi data, kepatuhan model bisnis (*100% Pre-Order*), perbaikan overflow layar, dan dukungan penuh Dark Mode pada aplikasi **PT Manufactur Dynamic Indonesia** (Coffee & Cocoa Machinery Mobile Application).
 
 ---
 
@@ -132,7 +132,7 @@ Sebelum dilakukan perbaikan, terdapat beberapa kendala utama:
   - **Dukungan Dark Mode Dinamis**: Menggantikan latar putih kaku dan warna statis dengan tema responsif (`isDark ? AppColors.darkBackground : Color(0xFFF8FAFC)`).
   - **Kartu Ringkasan Mesin Terintegrasi**: Menggabungkan thumbnail gambar mesin, kategori, nama, status lead time PO, harga satuan, dan *Quantity Stepper* (`- / +`) dalam satu kartu yang bersih tanpa visual noise.
   - **Form Pengiriman & Kustomisasi**: Input alamat instalasi pabrik dan catatan kustom laser engraving dengan input field yang nyaman dan berbayang halus.
-  - **Pilihan Rekening Transfer DP Interaktif**: Pilihan Bank BCA Corporate (`088-2930-112`) dan Mandiri B2B (`137-0099-221`) a.n. PT Manufactur Dynamic Indonesia, dilengkapi tombol **"Salin"** satu ketukan ke clipboard dengan notifikasi *SnackBar*.
+  - **Pilihan Rekening Transfer DP Interaktif**: Pilihan Bank BCA Corporate (`088-2930-112`) dan Mandiri (`137-0099-221`) a.n. PT Manufactur Dynamic Indonesia, dilengkapi tombol **"Salin"** satu ketukan ke clipboard dengan notifikasi *SnackBar*.
   - **Area Bukti Transfer Fleksibel**: Dropzone interaktif dengan indikator visual terunggah (berwarna hijau ramah saat dokumen dipilih).
   - **Eliminasi Kartu Rincian Pembayaran Redundan**: Menghapus tabel rincian pembayaran bertumpuk yang mengulang nominal subtotal dan DP berulang kali. Edukasi pelunasan termin dipindahkan langsung ke dalam *Sticky Bottom Bar* secara ringkas dan informatif (`Sisa 50% dilunasi pasca uji QC pabrik`).
   - **Sticky Bottom Action Bar & Modal Sukses**: Menampilkan nominal DP 50% yang harus dibayar sekarang, edukasi pelunasan sisa 50%, dan tombol **"Kirim Pesanan (PO)"** di bagian bawah layar yang selalu dapat diakses, diikuti dengan dialog konfirmasi PO sukses.
@@ -293,7 +293,7 @@ Sebelum dilakukan perbaikan, terdapat beberapa kendala utama:
 
 [ 3. Rekening Pembayaran DP 50% ]
   - Pilihan Interaktif: Bank BCA Corporate (088-2930-112)
-  - Pilihan Interaktif: Bank Mandiri B2B (137-0099-221)
+  - Pilihan Interaktif: Bank Mandiri (137-0099-221)
   - Tombol Aksi Cepat "Salin" (Copy to Clipboard) dengan Feedback SnackBar
 
 [ 4. Bukti Transfer DP 50% Interaktif ]

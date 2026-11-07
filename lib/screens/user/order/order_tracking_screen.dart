@@ -23,6 +23,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<AppState>(context, listen: false).loadOrdersFromBackend();
+      }
+    });
   }
 
   @override
@@ -55,6 +60,18 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
           icon: Icons.hourglass_top_rounded,
           color: Color(0xFFD97706), // Amber 600
           dpStatusText: "Proses Verifikasi",
+          isDpVerified: false,
+          pelunasanStatusText: "Pasca Uji QC",
+          isPelunasanDue: false,
+          isCompleted: false,
+        );
+      case OrderStatus.dpDitolak:
+        return const _OrderStatusInfo(
+          badgeText: "Bukti DP Ditolak (Tidak Valid)",
+          description: "Bukti transfer DP 50% ditolak admin. Silakan unggah ulang bukti yang valid",
+          icon: Icons.cancel_outlined,
+          color: Color(0xFFDC2626), // Red 600
+          dpStatusText: "Ditolak (Upload Ulang)",
           isDpVerified: false,
           pelunasanStatusText: "Pasca Uji QC",
           isPelunasanDue: false,
@@ -99,12 +116,36 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
       case OrderStatus.menungguPelunasan:
         return const _OrderStatusInfo(
           badgeText: "Menunggu Pelunasan Sisa 50%",
-          description: "Mesin lulus QC 100% • Pelunasan diperlukan sebelum kirim",
+          description: "Mesin lulus QC 100% • Silakan unggah bukti pelunasan sisa 50%",
           icon: Icons.payment_rounded,
           color: Color(0xFFEA580C), // Orange 600
           dpStatusText: "Terbayar (50%)",
           isDpVerified: true,
           pelunasanStatusText: "Perlu Dilunasi",
+          isPelunasanDue: true,
+          isCompleted: false,
+        );
+      case OrderStatus.verifikasiPelunasan:
+        return const _OrderStatusInfo(
+          badgeText: "Menunggu Verifikasi Pelunasan",
+          description: "Bukti pelunasan terkirim • Sedang diverifikasi admin finance pabrik",
+          icon: Icons.hourglass_top_rounded,
+          color: Color(0xFF0284C7), // Sky 600
+          dpStatusText: "Terbayar (50%)",
+          isDpVerified: true,
+          pelunasanStatusText: "Verifikasi Admin",
+          isPelunasanDue: false,
+          isCompleted: false,
+        );
+      case OrderStatus.pelunasanDitolak:
+        return const _OrderStatusInfo(
+          badgeText: "Bukti Pelunasan Ditolak",
+          description: "Bukti pelunasan tidak valid menurut admin finance. Harap unggah ulang",
+          icon: Icons.error_outline_rounded,
+          color: Color(0xFFDC2626), // Red 600
+          dpStatusText: "Terbayar (50%)",
+          isDpVerified: true,
+          pelunasanStatusText: "Ditolak (Upload Ulang)",
           isPelunasanDue: true,
           isCompleted: false,
         );
@@ -256,22 +297,34 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
         children: [
           // Tab 1: Standard PO Orders
           orders.isEmpty
-              ? _buildEmptyState(
-                  icon: Icons.inventory_2_outlined,
-                  title: "Belum Ada Pesanan Mesin PO",
-                  message:
-                      "Anda belum memiliki transaksi Purchase Order (PO) mesin saat ini.",
-                  isDark: isDark,
+              ? RefreshIndicator(
+                  onRefresh: () => appState.loadOrdersFromBackend(),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.7,
+                      child: _buildEmptyState(
+                        icon: Icons.inventory_2_outlined,
+                        title: "Belum Ada Pesanan Mesin PO",
+                        message:
+                            "Anda belum memiliki transaksi Purchase Order (PO) mesin saat ini.",
+                        isDark: isDark,
+                      ),
+                    ),
+                  ),
                 )
-              : ListView.builder(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: orders.length,
-                  itemBuilder: (context, index) {
-                    final order = orders[index];
-                    return _buildPoCard(context, appState, order, isDark);
-                  },
+              : RefreshIndicator(
+                  onRefresh: () => appState.loadOrdersFromBackend(),
+                  child: ListView.builder(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                    itemCount: orders.length,
+                    itemBuilder: (context, index) {
+                      final order = orders[index];
+                      return _buildPoCard(context, appState, order, isDark);
+                    },
+                  ),
                 ),
 
           // Tab 2: Custom RFQ Orders
@@ -884,32 +937,43 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: statusInfo.isPelunasanDue
-                              ? const Color(0xFFEA580C)
-                              : (isDark
-                                  ? const Color(0xFF1E293B)
-                                  : AppColors.primary),
+                          backgroundColor: (order.status == OrderStatus.dpDitolak || order.status == OrderStatus.pelunasanDitolak)
+                              ? const Color(0xFFDC2626)
+                              : (statusInfo.isPelunasanDue
+                                  ? const Color(0xFFEA580C)
+                                  : (isDark
+                                      ? const Color(0xFF1E293B)
+                                      : AppColors.primary)),
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 9),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(9),
-                            side: isDark && !statusInfo.isPelunasanDue
+                            side: isDark &&
+                                    !statusInfo.isPelunasanDue &&
+                                    order.status != OrderStatus.dpDitolak &&
+                                    order.status != OrderStatus.pelunasanDitolak
                                 ? const BorderSide(
                                     color: Color(0xFF3B82F6), width: 0.8)
                                 : BorderSide.none,
                           ),
                         ),
                         icon: Icon(
-                          statusInfo.isPelunasanDue
-                              ? Icons.upload_file_rounded
-                              : Icons.arrow_forward_rounded,
+                          (order.status == OrderStatus.dpDitolak)
+                              ? Icons.refresh_rounded
+                              : (statusInfo.isPelunasanDue
+                                  ? Icons.upload_file_rounded
+                                  : Icons.arrow_forward_rounded),
                           size: 15,
                         ),
                         label: Text(
-                          statusInfo.isPelunasanDue
-                              ? "Upload Pelunasan"
-                              : "Detail Pesanan",
+                          order.status == OrderStatus.dpDitolak
+                              ? "Unggah Ulang DP"
+                              : (order.status == OrderStatus.pelunasanDitolak
+                                  ? "Unggah Ulang Pelunasan"
+                                  : (statusInfo.isPelunasanDue
+                                      ? "Upload Pelunasan"
+                                      : "Detail Pesanan")),
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11.5,
                             fontWeight: FontWeight.bold,

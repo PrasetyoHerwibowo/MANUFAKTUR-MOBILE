@@ -425,6 +425,22 @@ class ApiService {
   // 3. PURCHASE ORDERS & SERVIS (PROTECTED)
   // ==========================================
 
+  static Future<List<Map<String, dynamic>>?> fetchOrders() async {
+    try {
+      final response = await _getRequest('/orders', timeout: const Duration(seconds: 15));
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true && body['data'] is List) {
+          final List rawList = body['data'];
+          return rawList.map((e) => e as Map<String, dynamic>).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('ApiService fetchOrders error: ');
+    }
+    return null;
+  }
+
   static Future<Map<String, dynamic>?> createOrder({
     required int machineId,
     required int quantity,
@@ -444,7 +460,7 @@ class ApiService {
           'bank_method': bankMethod,
           'dp_proof': dpProof,
         },
-        timeout: const Duration(seconds: 15),
+        timeout: const Duration(seconds: 35),
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
@@ -461,7 +477,7 @@ class ApiService {
       final response = await _postRequest(
         '/orders/$orderId/pay-dp',
         {'proof': proof},
-        timeout: const Duration(seconds: 15),
+        timeout: const Duration(seconds: 35),
       );
 
       return response.statusCode == 200;
@@ -476,7 +492,7 @@ class ApiService {
       final response = await _postRequest(
         '/orders/$orderId/pay-pelunasan',
         {'proof': proof},
-        timeout: const Duration(seconds: 15),
+        timeout: const Duration(seconds: 35),
       );
 
       return response.statusCode == 200;
@@ -535,7 +551,7 @@ class ApiService {
           'address': address,
           'issue_description': issueDescription,
         },
-        timeout: const Duration(seconds: 15),
+        timeout: const Duration(seconds: 35),
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
@@ -562,7 +578,7 @@ class ApiService {
           'damage_description': damageDescription,
           'photo': photo,
         },
-        timeout: const Duration(seconds: 15),
+        timeout: const Duration(seconds: 35),
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {

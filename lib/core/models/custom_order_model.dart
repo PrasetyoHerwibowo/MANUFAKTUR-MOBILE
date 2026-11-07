@@ -1,8 +1,8 @@
 enum CustomOrderStatus {
-  diajukan, // User submitted RFQ
-  dalamReview, // Admin reviewing specs
-  quotationTerkirim, // Admin sent quotation PDF & price
-  disetujui, // User accepted & created PO
+  diajukan, // Diajukan oleh user
+  dalamReview, // Tim engineer mereview spesifikasi teknis
+  quotationTerkirim, // Penawaran harga & rincian teknis terkirim
+  disetujui, // Disetujui & diterbitkan PO
   ditolak,
 }
 

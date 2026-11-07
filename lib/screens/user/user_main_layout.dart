@@ -18,7 +18,6 @@ class UserMainLayout extends StatefulWidget {
 }
 
 class _UserMainLayoutState extends State<UserMainLayout> {
-  int _currentIndex = 0;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -28,7 +27,7 @@ class _UserMainLayoutState extends State<UserMainLayout> {
   }
 
   Widget _buildBody(AppState appState) {
-    switch (_currentIndex) {
+    switch (appState.userTabIndex) {
       case 0:
         // Page 1: Home Produk selalu ditampilkan walaupun user belum login
         return const HomeScreen();
@@ -80,6 +79,42 @@ class _UserMainLayoutState extends State<UserMainLayout> {
     final isDark = appState.isDarkMode;
     final unreadCount = appState.unreadNotificationsCount;
 
+    // Tampilkan notifikasi real-time jika ada pembaruan status pesanan dari admin website
+    if (appState.latestStatusNotification != null) {
+      final notifText = appState.latestStatusNotification!;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && appState.latestStatusNotification != null) {
+          appState.clearLatestStatusNotification();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      notifText,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.primary,
+              duration: const Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      });
+    }
+
     // Keep search controller in sync with appState
     if (_searchController.text != appState.searchQuery) {
       _searchController.value = TextEditingValue(
@@ -109,11 +144,9 @@ class _UserMainLayoutState extends State<UserMainLayout> {
           ],
         ),
         child: BottomNavigationBar(
-          currentIndex: _currentIndex,
+          currentIndex: appState.userTabIndex,
           onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
+            appState.setUserTabIndex(index);
           },
           type: BottomNavigationBarType.fixed,
           backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
@@ -157,8 +190,8 @@ class _UserMainLayoutState extends State<UserMainLayout> {
 
   PreferredSizeWidget _buildAppBar(
       BuildContext context, AppState appState, bool isDark, int unreadCount) {
-    if (_currentIndex == 0) {
-      // Modern Clean Top Bar (Search bar luas tanpa icon EIKO & tanpa tombol Admin)
+    if (appState.userTabIndex == 0) {
+      // Modern Clean Top Bar (Search bar luas)
       return AppBar(
         backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
         elevation: 0,
@@ -300,7 +333,7 @@ class _UserMainLayoutState extends State<UserMainLayout> {
         elevation: 0,
         scrolledUnderElevation: 0,
         title: Text(
-          titles[_currentIndex],
+          titles[appState.userTabIndex],
           style: GoogleFonts.outfit(
             fontSize: 17,
             fontWeight: FontWeight.bold,

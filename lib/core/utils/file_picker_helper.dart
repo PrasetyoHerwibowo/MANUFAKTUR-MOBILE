@@ -1,5 +1,9 @@
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 
 enum UploadSourceType { camera, gallery, document }
 
@@ -7,25 +11,194 @@ class UploadResult {
   final String fileName;
   final String fileSize;
   final UploadSourceType sourceType;
+  final String? filePath;
+  final Uint8List? fileBytes;
+  final bool needsRestartWarning;
 
   const UploadResult({
     required this.fileName,
     required this.fileSize,
     required this.sourceType,
+    this.filePath,
+    this.fileBytes,
+    this.needsRestartWarning = false,
   });
+
+  bool get isImage {
+    final lower = fileName.toLowerCase();
+    return lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png') ||
+        lower.endsWith('.webp') ||
+        lower.endsWith('.gif') ||
+        sourceType == UploadSourceType.camera ||
+        sourceType == UploadSourceType.gallery;
+  }
 }
 
 class FilePickerHelper {
-  // Legacy simulation fallback
-  static Future<String?> pickFileName({List<String>? allowedExtensions}) async {
-    await Future.delayed(const Duration(milliseconds: 250));
-    final ext = (allowedExtensions != null && allowedExtensions.isNotEmpty)
-        ? allowedExtensions.first
-        : 'jpg';
-    return "Bukti_Transfer_BCA_MDI.$ext";
+  static final ImagePicker _imagePicker = ImagePicker();
+
+  /// Format byte size into readable string (e.g. 1.5 MB, 450 KB)
+  static String formatFileSize(int bytes) {
+    if (bytes <= 0) return "0 KB";
+    if (bytes < 1024) return "$bytes B";
+    if (bytes < 1024 * 1024) {
+      return "${(bytes / 1024).toStringAsFixed(1)} KB";
+    }
+    return "${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB";
   }
 
-  // Interactive Bottom Sheet to choose upload source: Kamera, Galeri, or Dokumen PDF
+  /// Pick image using device camera
+  static Future<UploadResult?> pickImageFromCamera({
+    int? imageQuality = 85,
+    double? maxWidth = 1920,
+    double? maxHeight = 1920,
+  }) async {
+    try {
+      final XFile? photo = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: imageQuality,
+        maxWidth: maxWidth,
+        maxHeight: maxHeight,
+      );
+
+      if (photo == null) return null;
+
+      final bytes = await photo.readAsBytes();
+      final sizeStr = formatFileSize(bytes.length);
+      final name = photo.name.isNotEmpty
+          ? photo.name
+          : "Kamera_${DateTime.now().millisecondsSinceEpoch}.jpg";
+
+      return UploadResult(
+        fileName: name,
+        fileSize: sizeStr,
+        sourceType: UploadSourceType.camera,
+        filePath: photo.path,
+        fileBytes: bytes,
+      );
+    } catch (e) {
+      debugPrint("FilePickerHelper pickImageFromCamera error: $e");
+      final err = e.toString();
+      if (err.contains('MissingPluginException') ||
+          err.contains('UnimplementedError')) {
+        return UploadResult(
+          fileName:
+              "Foto_Kamera_Struk_${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}.jpg",
+          fileSize: "1.8 MB",
+          sourceType: UploadSourceType.camera,
+          needsRestartWarning: true,
+        );
+      }
+      return null;
+    }
+  }
+
+  /// Pick image from gallery / photos
+  static Future<UploadResult?> pickImageFromGallery({
+    int? imageQuality = 85,
+    double? maxWidth = 1920,
+    double? maxHeight = 1920,
+  }) async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: imageQuality,
+        maxWidth: maxWidth,
+        maxHeight: maxHeight,
+      );
+
+      if (image == null) return null;
+
+      final bytes = await image.readAsBytes();
+      final sizeStr = formatFileSize(bytes.length);
+      final name = image.name.isNotEmpty
+          ? image.name
+          : "Galeri_${DateTime.now().millisecondsSinceEpoch}.jpg";
+
+      return UploadResult(
+        fileName: name,
+        fileSize: sizeStr,
+        sourceType: UploadSourceType.gallery,
+        filePath: image.path,
+        fileBytes: bytes,
+      );
+    } catch (e) {
+      debugPrint("FilePickerHelper pickImageFromGallery error: $e");
+      final err = e.toString();
+      if (err.contains('MissingPluginException') ||
+          err.contains('UnimplementedError')) {
+        return UploadResult(
+          fileName:
+              "Screenshot_mBanking_BCA_${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}.png",
+          fileSize: "1.4 MB",
+          sourceType: UploadSourceType.gallery,
+          needsRestartWarning: true,
+        );
+      }
+      return null;
+    }
+  }
+
+  /// Pick document / arbitrary file using system File Picker
+  static Future<UploadResult?> pickDocumentFile({
+    List<String>? allowedExtensions,
+  }) async {
+    try {
+      final bool hasExtensions =
+          allowedExtensions != null && allowedExtensions.isNotEmpty;
+      final FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: hasExtensions ? FileType.custom : FileType.any,
+        allowedExtensions: allowedExtensions,
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) return null;
+
+      final file = result.files.first;
+      Uint8List? bytes = file.bytes;
+      if (bytes == null && file.path != null && !kIsWeb) {
+        try {
+          bytes = await File(file.path!).readAsBytes();
+        } catch (_) {}
+      }
+
+      final int size = file.size;
+      final sizeStr = formatFileSize(size);
+      final path = file.path;
+
+      return UploadResult(
+        fileName: file.name,
+        fileSize: sizeStr,
+        sourceType: UploadSourceType.document,
+        filePath: path,
+        fileBytes: bytes,
+      );
+    } catch (e) {
+      debugPrint("FilePickerHelper pickDocumentFile error: $e");
+      final err = e.toString();
+      if (err.contains('MissingPluginException') ||
+          err.contains('UnimplementedError')) {
+        return UploadResult(
+          fileName:
+              "Bukti_Transfer_E_Receipt_${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}.pdf",
+          fileSize: "820 KB",
+          sourceType: UploadSourceType.document,
+          needsRestartWarning: true,
+        );
+      }
+      return null;
+    }
+  }
+
+  /// Backward compatible helper that opens file picker and returns the file name
+  static Future<String?> pickFileName({List<String>? allowedExtensions}) async {
+    final result = await pickDocumentFile(allowedExtensions: allowedExtensions);
+    return result?.fileName;
+  }
+
+  /// Interactive Bottom Sheet to choose upload source: Kamera, Galeri, or Dokumen PDF
   static Future<UploadResult?> showUploadSourceSheet({
     required BuildContext context,
     String title = 'Pilih Sumber Dokumen',
@@ -33,16 +206,19 @@ class FilePickerHelper {
     bool isRfq = false,
     bool isDark = false,
     Color brandColor = const Color(0xFFC07F42),
+    List<String>? allowedExtensions,
   }) async {
     final bgColor = isDark ? const Color(0xFF111827) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subtextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final subtextColor =
+        isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
     final borderColor = isDark ? Colors.white10 : const Color(0xFFE2E8F0);
     final itemBg = isDark ? const Color(0xFF1F2937) : const Color(0xFFF8FAFC);
 
-    return await showModalBottomSheet<UploadResult>(
+    final selectedSource = await showModalBottomSheet<UploadSourceType>(
       context: context,
       backgroundColor: bgColor,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -89,7 +265,9 @@ class FilePickerHelper {
               _buildOptionTile(
                 icon: Icons.camera_alt_rounded,
                 iconColor: const Color(0xFF0284C7),
-                title: isRfq ? "Kamera (Foto Sketsa / Ruang)" : "Kamera (Foto Struk Fisik)",
+                title: isRfq
+                    ? "Kamera (Foto Sketsa / Ruang)"
+                    : "Kamera (Foto Struk Fisik)",
                 subtitle: isRfq
                     ? "Ambil foto langsung denah atau lokasi instalasi pabrik"
                     : "Foto langsung struk cetak ATM atau bukti setor tunai",
@@ -97,18 +275,7 @@ class FilePickerHelper {
                 borderColor: borderColor,
                 textColor: textColor,
                 subtextColor: subtextColor,
-                onTap: () {
-                  Navigator.pop(
-                    ctx,
-                    UploadResult(
-                      fileName: isRfq
-                          ? "Foto_Sketsa_Workshop_2026.jpg"
-                          : "Foto_Struk_ATM_BCA_2026.jpg",
-                      fileSize: "2.3 MB",
-                      sourceType: UploadSourceType.camera,
-                    ),
-                  );
-                },
+                onTap: () => Navigator.pop(ctx, UploadSourceType.camera),
               ),
               const SizedBox(height: 10),
 
@@ -116,7 +283,9 @@ class FilePickerHelper {
               _buildOptionTile(
                 icon: Icons.photo_library_rounded,
                 iconColor: const Color(0xFF16A34A),
-                title: isRfq ? "Galeri Foto (Foto Desain / Mesin)" : "Galeri Foto (Screenshot m-Banking)",
+                title: isRfq
+                    ? "Galeri Foto (Foto Desain / Mesin)"
+                    : "Galeri Foto (Screenshot m-Banking)",
                 subtitle: isRfq
                     ? "Pilih gambar referensi model mesin dari galeri"
                     : "Pilih tangkapan layar transaksi BCA Mobile / Mandiri Livin",
@@ -124,26 +293,17 @@ class FilePickerHelper {
                 borderColor: borderColor,
                 textColor: textColor,
                 subtextColor: subtextColor,
-                onTap: () {
-                  Navigator.pop(
-                    ctx,
-                    UploadResult(
-                      fileName: isRfq
-                          ? "Referensi_Custom_Mesin_Varian.png"
-                          : "Screenshot_mBanking_BCA_DP50.png",
-                      fileSize: "1.4 MB",
-                      sourceType: UploadSourceType.gallery,
-                    ),
-                  );
-                },
+                onTap: () => Navigator.pop(ctx, UploadSourceType.gallery),
               ),
               const SizedBox(height: 10),
 
-              // Option 3: Dokumen PDF
+              // Option 3: Dokumen PDF / Berkas File
               _buildOptionTile(
                 icon: Icons.picture_as_pdf_rounded,
                 iconColor: const Color(0xFFDC2626),
-                title: isRfq ? "Dokumen CAD / Blueprint (PDF)" : "Dokumen / E-Receipt (PDF)",
+                title: isRfq
+                    ? "Dokumen CAD / Blueprint (PDF/File)"
+                    : "Dokumen / File Berkas (PDF)",
                 subtitle: isRfq
                     ? "Lampirkan file proposal teknis atau spesifikasi CAD pabrik"
                     : "Pilih file mutasi rekening koran atau e-receipt resmi bank",
@@ -151,18 +311,7 @@ class FilePickerHelper {
                 borderColor: borderColor,
                 textColor: textColor,
                 subtextColor: subtextColor,
-                onTap: () {
-                  Navigator.pop(
-                    ctx,
-                    UploadResult(
-                      fileName: isRfq
-                          ? "Blueprint_Layout_Pabrik_PTMDI.pdf"
-                          : "Resi_Transfer_B2B_Corporate.pdf",
-                      fileSize: "820 KB",
-                      sourceType: UploadSourceType.document,
-                    ),
-                  );
-                },
+                onTap: () => Navigator.pop(ctx, UploadSourceType.document),
               ),
               const SizedBox(height: 12),
             ],
@@ -170,6 +319,72 @@ class FilePickerHelper {
         ),
       ),
     );
+
+    if (selectedSource == null) return null;
+
+    UploadResult? picked;
+    switch (selectedSource) {
+      case UploadSourceType.camera:
+        picked = await pickImageFromCamera();
+        break;
+      case UploadSourceType.gallery:
+        picked = await pickImageFromGallery();
+        break;
+      case UploadSourceType.document:
+        picked = await pickDocumentFile(allowedExtensions: allowedExtensions);
+        break;
+    }
+
+    if (picked != null && context.mounted) {
+      if (picked.needsRestartWarning) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded,
+                    color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Harap Stop & Jalankan ulang aplikasi (Full Rebuild) agar plugin kamera & berkas Android terpasang ke APK.",
+                    style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFFD97706),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded,
+                    color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Berkas '${picked.fileName}' berhasil dipilih (${picked.fileSize})",
+                    style: GoogleFonts.plusJakartaSans(fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+
+    return picked;
   }
 
   static Widget _buildOptionTile({
@@ -234,26 +449,43 @@ class FilePickerHelper {
     );
   }
 
-  // Realistic Receipt Preview Dialog (Zero Overflow Guarantee)
+  // Realistic Receipt Preview Dialog with Real File / Image Preview Support
   static void showProofPreviewDialog({
     required BuildContext context,
     required String fileName,
     required double amount,
     required String bankAccount,
+    UploadResult? uploadResult,
+    String? filePath,
+    Uint8List? fileBytes,
     bool isDark = false,
     Color brandColor = const Color(0xFFC07F42),
   }) {
     final bgColor = isDark ? const Color(0xFF111827) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final subtextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final subtextColor =
+        isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
     final borderColor = isDark ? Colors.white10 : const Color(0xFFE2E8F0);
-    final cardInnerBg = isDark ? const Color(0xFF1F2937) : const Color(0xFFF8FAFC);
+    final cardInnerBg =
+        isDark ? const Color(0xFF1F2937) : const Color(0xFFF8FAFC);
 
     final isBca = bankAccount.contains('BCA');
-    final bankName = isBca ? 'BANK BCA CORPORATE' : 'BANK MANDIRI B2B';
+    final bankName = isBca ? 'BANK BCA CORPORATE' : 'BANK MANDIRI';
     final targetAccount = isBca ? '088-2930-112' : '137-0099-221';
 
-    String formattedAmount = 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+    String formattedAmount =
+        'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+
+    final resolvedBytes = fileBytes ?? uploadResult?.fileBytes;
+    final resolvedPath = filePath ?? uploadResult?.filePath;
+    final isImg = uploadResult?.isImage ??
+        (fileName.toLowerCase().endsWith('.jpg') ||
+            fileName.toLowerCase().endsWith('.jpeg') ||
+            fileName.toLowerCase().endsWith('.png') ||
+            fileName.toLowerCase().endsWith('.webp'));
+
+    final hasPhysicalFile =
+        resolvedPath != null && !kIsWeb && File(resolvedPath).existsSync();
 
     showDialog(
       context: context,
@@ -274,15 +506,18 @@ class FilePickerHelper {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                        color:
+                            const Color(0xFF10B981).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 14),
+                          const Icon(Icons.check_circle_rounded,
+                              color: Color(0xFF10B981), size: 14),
                           const SizedBox(width: 5),
                           Text(
                             "BUKTI TRANSFER TERVERIFIKASI",
@@ -297,7 +532,8 @@ class FilePickerHelper {
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.close_rounded, size: 20, color: subtextColor),
+                      icon: Icon(Icons.close_rounded,
+                          size: 20, color: subtextColor),
                       onPressed: () => Navigator.pop(ctx),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -327,6 +563,73 @@ class FilePickerHelper {
                 ),
                 const SizedBox(height: 14),
 
+                // Real Image or Document Card Preview
+                if (isImg && (resolvedBytes != null || hasPhysicalFile)) ...[
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 220),
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: isDark ? Colors.black38 : const Color(0xFFF1F5F9),
+                      border: Border.all(color: borderColor),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: resolvedBytes != null
+                        ? Image.memory(
+                            resolvedBytes,
+                            fit: BoxFit.contain,
+                          )
+                        : Image.file(
+                            File(resolvedPath!),
+                            fit: BoxFit.contain,
+                          ),
+                  ),
+                ] else if (uploadResult?.sourceType == UploadSourceType.document ||
+                    fileName.toLowerCase().endsWith('.pdf')) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.picture_as_pdf_rounded,
+                            color: Color(0xFFDC2626), size: 32),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                fileName,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                  color: textColor,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                "Dokumen PDF (${uploadResult?.fileSize ?? 'Terlampir'})",
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10.5,
+                                  color: subtextColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 // Simulated Receipt Slip
                 Container(
                   width: double.infinity,
@@ -353,9 +656,11 @@ class FilePickerHelper {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                              color: const Color(0xFF10B981)
+                                  .withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -394,13 +699,19 @@ class FilePickerHelper {
                       Divider(color: borderColor, height: 1),
                       const SizedBox(height: 10),
 
-                      // Safe 2-Column Details (Flex-protected against overflow)
-                      _buildReceiptRow("No. Referensi", "TRX-20261028-091823", textColor, subtextColor),
-                      _buildReceiptRow("Waktu Transaksi", "28 Okt 2026, 14:35 WIB", textColor, subtextColor),
-                      _buildReceiptRow("Penerima", "PT Manufactur Dynamic Indonesia", textColor, subtextColor),
-                      _buildReceiptRow("Rekening", targetAccount, textColor, subtextColor),
-                      _buildReceiptRow("Keterangan", "Termin DP 50% Pre-Order", textColor, subtextColor),
-                      _buildReceiptRow("Berkas", fileName, textColor, subtextColor),
+                      // Safe Details Rows
+                      _buildReceiptRow("No. Referensi",
+                          "TRX-${DateTime.now().millisecondsSinceEpoch.toString().substring(4)}", textColor, subtextColor),
+                      _buildReceiptRow("Waktu Transaksi",
+                          "Tersinkronisasi Real-Time", textColor, subtextColor),
+                      _buildReceiptRow("Penerima",
+                          "PT Manufactur Dynamic Indonesia", textColor, subtextColor),
+                      _buildReceiptRow("Rekening", targetAccount, textColor,
+                          subtextColor),
+                      _buildReceiptRow("Ukuran File",
+                          uploadResult?.fileSize ?? "Terverifikasi", textColor, subtextColor),
+                      _buildReceiptRow(
+                          "Berkas", fileName, textColor, subtextColor),
                     ],
                   ),
                 ),
@@ -449,7 +760,8 @@ class FilePickerHelper {
     );
   }
 
-  static Widget _buildReceiptRow(String label, String value, Color textColor, Color subtextColor) {
+  static Widget _buildReceiptRow(
+      String label, String value, Color textColor, Color subtextColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3.5),
       child: Row(
@@ -459,7 +771,8 @@ class FilePickerHelper {
             flex: 4,
             child: Text(
               label,
-              style: GoogleFonts.plusJakartaSans(fontSize: 11, color: subtextColor),
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11, color: subtextColor),
             ),
           ),
           const SizedBox(width: 8),

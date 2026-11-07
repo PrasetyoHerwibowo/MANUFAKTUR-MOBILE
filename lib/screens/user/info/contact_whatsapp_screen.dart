@@ -10,7 +10,7 @@ class ContactWhatsappScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text("Hubungi Admin Engineer"),
+        title: const Text("Hubungi Tim Support"),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -36,7 +36,7 @@ class ContactWhatsappScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    "WhatsApp Official B2B Support",
+                    "WhatsApp Official Support",
                     style: GoogleFonts.outfit(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -54,7 +54,7 @@ class ContactWhatsappScreen extends StatelessWidget {
                   const SizedBox(height: 24),
 
                   _buildContactCard(
-                    title: "Admin Sales & Quotation",
+                    title: "Tim Sales & Quotation",
                     phone: "+62 812-9876-5432",
                     desc: "Untuk pertanyaan penawaran harga PO & custom machine.",
                   ),

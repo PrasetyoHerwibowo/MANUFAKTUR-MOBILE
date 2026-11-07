@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -535,20 +537,28 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(10),
+                            width: 44,
+                            height: 44,
                             decoration: BoxDecoration(
                               color: _attachmentName != null
                                   ? const Color(0xFF10B981).withValues(alpha: 0.15)
                                   : (isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
-                              _attachmentName != null
-                                  ? Icons.attach_file_rounded
-                                  : Icons.upload_file_outlined,
-                              color: _attachmentName != null ? const Color(0xFF10B981) : brandColor,
-                              size: 22,
-                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: _uploadedAttachment != null && _uploadedAttachment!.isImage && _uploadedAttachment!.fileBytes != null
+                                ? Image.memory(_uploadedAttachment!.fileBytes!, fit: BoxFit.cover)
+                                : (_uploadedAttachment != null && _uploadedAttachment!.isImage && _uploadedAttachment!.filePath != null && !kIsWeb && File(_uploadedAttachment!.filePath!).existsSync())
+                                    ? Image.file(File(_uploadedAttachment!.filePath!), fit: BoxFit.cover)
+                                    : Center(
+                                        child: Icon(
+                                          _attachmentName != null
+                                              ? Icons.attach_file_rounded
+                                              : Icons.upload_file_outlined,
+                                          color: _attachmentName != null ? const Color(0xFF10B981) : brandColor,
+                                          size: 22,
+                                        ),
+                                      ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
