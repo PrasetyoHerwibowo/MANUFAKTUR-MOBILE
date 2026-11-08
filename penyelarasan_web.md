@@ -37,8 +37,8 @@ Branch aktif pengerjaan: **`fitur/ui-monokrom`**
 | **Tahap 3.3**| Home: Industrial Machine Card & Clean Layout | ✅ Selesai | `49074d8` | Kode model MDI-xxx, badge lini, rasio 0.58, tombol bulat monokrom, hapus banner ganda |
 | **Tahap 4** | Penyelarasan Halaman Detail Produk | ✅ Selesai | `44cd378` | Kode model, Kotak Fungsi Mesin, Tabel Spek, Brosur SOP PDF, Video Demo, Pill CTA |
 | **Tahap 5** | Halaman Custom Order RFQ & WhatsApp Gateway | ✅ Selesai | `ff11fe0` | Form ringkas 30 detik, Kontak PIC, Auto-Ticket RFQ, Dialog WhatsApp Helpdesk |
-| **Tahap 6** | Halaman Kontak WhatsApp & Dialog Monokrom | ✅ Selesai | `77e23e2` | Desain Industrial Monokrom, hapus hijau norak, Inverted Zinc Pill, banner tiket |
-| **Tahap 7** | Formulir PO Standar & Standardisasi Data PIC | ✅ Selesai | - | Monokrom Zinc, Nama & WA PIC, Alamat Workshop, Inverted Zinc Pill, dialog PO |
+| **Tahap 6** | Halaman Kontak WhatsApp Resmi Lead Engineer | ✅ Selesai | `77e23e2` | Satukan kontak jadi 1 kanal resmi Lead Engineer, monokrom industrial, Inverted Zinc Pill |
+| **Tahap 7** | Formulir PO Standar & Pratinjau Bukti Transfer | ✅ Selesai | `6b4d31b` | Hapus catatan PO standar, standardisasi identitas PIC, slip pratinjau bukti DP 50% monokrom |
 
 ---
 
@@ -91,7 +91,7 @@ Branch aktif pengerjaan: **`fitur/ui-monokrom`**
 
 ---
 
-### Tahap 6: Penyelarasan Halaman Kontak WhatsApp & Dialog Sukses Monokrom
+### Tahap 6: Penyelarasan Halaman Kontak WhatsApp & Kanal Resmi Lead Engineer
 - **File Dimodifikasi**:
   1. `lib/screens/user/info/contact_whatsapp_screen.dart`
   2. `lib/screens/user/order/rfq_custom_order_screen.dart`
@@ -99,35 +99,47 @@ Branch aktif pengerjaan: **`fitur/ui-monokrom`**
   - **Hapus Warna Hijau Norak & Lingkaran Besar**: Menggantikan lingkaran hijau 50px dan tombol hijau kaku dengan tata letak Industrial Monokrom bersih (*Zinc 950, Zinc 200 hairline border, Zinc 100 surface*).
   - **Header Banner Resmi**: Menggunakan tipografi kokoh *Plus Jakarta Sans* dengan pill badge `"OFFICIAL SUPPORT PT MDI"`.
   - **Dukungan Tiket Kustomisasi Aktif**: Jika dibuka dari dialog RFQ kustomisasi, halaman otomatis menampilkan banner hitam Zinc 950 berisi nomor tiket resmi dan nama unit mesin untuk memudahkan customer menyebutkan nomor tiket saat chat.
-  - **2 Kartu Kontak Resmi**: Kartu Sales Engineering & Kartu Helpdesk Teknisi dengan tombol kapsul Inverted Zinc `999px`.
+  - **Penyatuan Menjadi 1 Kanal Resmi**: Menggabungkan kontak menjadi 1 kartu resmi tunggal: *Lead Engineer & Konsultasi Teknis PT MDI* dengan tombol kapsul Inverted Zinc `999px`.
   - **Kartu Workshop & Pabrik Cikarang**: Info lokasi dan jam operasional pabrik yang rapi dengan tipografi monokrom bersih tanpa teks oranye.
   - **Dialog Tiket Monokrom**: Ikon centang dan tombol *"Buka WhatsApp Engineer Sekarang"* di dialog RFQ diselaraskan menjadi Inverted Zinc Pill monokrom tanpa warna hijau yang bertabrakan.
+- **Commit**: `[fitur/ui-monokrom 77e23e2] refactor(contact): satukan kontak whatsapp menjadi satu kanal resmi lead engineer`
 
 ---
 
-### Tahap 7: Penyelarasan Formulir Pemesanan Standar PO & Standardisasi Data Identitas PIC
+### Tahap 7: Formulir Pemesanan Standar PO & Pratinjau Bukti Transfer Monokrom
 - **File Dimodifikasi**:
   1. `lib/screens/user/order/po_form_screen.dart`
   2. `lib/screens/user/order/rfq_custom_order_screen.dart`
+  3. `lib/core/utils/file_picker_helper.dart`
 - **Poin Perubahan**:
-  - **Standardisasi Identitas Pemesan**: Menyelaraskan kedua form pemesanan dengan field terpadu: Nama Lengkap PIC (auto-prefill profil), Nomor WhatsApp PIC (koordinasi ekspedisi), dan Alamat Lengkap Pengiriman Pabrik / Workshop.
-  - **Formulir PO Bebas Catatan Kustom**: Menggantikan kolom ukir logo kustom dengan *"Catatan Tambahan untuk Admin (Opsional)"* khusus instruksi pengiriman.
+  - **Standardisasi Identitas Pemesan**: Menyelaraskan form pemesanan dengan field terpadu: Nama Lengkap PIC (auto-prefill profil), Nomor WhatsApp PIC (koordinasi ekspedisi), dan Alamat Lengkap Pengiriman Pabrik / Workshop.
+  - **Hapus Catatan PO Standar (Anti-Multitafsir)**: Menghapus kolom catatan tambahan untuk admin dari PO Standar agar pengujian uji kelayakan tegas membedakan transaksi unit standar (katalog) murni dengan formulir RFQ custom order.
   - **Pilihan Rekening Bank Monokrom**: Menghapus warna amber/oranye pada pilihan bank BCA & Mandiri, menggunakan tipografi *Plus Jakarta Sans* bold hitam tegas, dan tombol salin kapsul minimalis.
   - **Upload Bukti Transfer DP 50%**: Kotak unggah berlatar Zinc 100 dengan *hairline border* Zinc 200 dan tombol ganti/lihat bukti monokrom.
+  - **Penyelarasan Dialog Pratinjau Bukti Transfer (`file_picker_helper.dart`)**:
+    - Mengganti badge hijau *"BUKTI TRANSFER TERVERIFIKASI"* menjadi badge monokrom industrial *"LAMPIRAN BUKTI TRANSFER"*.
+    - Mengganti badge hijau *"BERHASIL"* menjadi badge Zinc monokrom *"DRAF DP 50%"* (menghindari kebingungan status sebelum verifikasi admin).
+    - Tipografi nominal monokrom pekat (`Plus Jakarta Sans`).
+    - Tombol *"Tutup"* diubah menjadi Inverted Zinc Pill `999px`.
   - **Bottom Action Bar Inverted Zinc Pill**: Tombol utama *"Kirim Pesanan (PO)"* kapsul `999px` berlatar Zinc 950 `#09090B`.
   - **Dialog Sukses PO Monokrom**: Ikon centang terverifikasi industrial Zinc 950 dan tombol kapsul Inverted Zinc yang langsung mengarahkan user ke Tab Pesanan.
   - **Tambahan Lokasi Workshop di RFQ Custom**: Menambahkan kolom *"Kota / Lokasi Workshop (Instalasi Mesin)"* pada form kustomisasi RFQ untuk kelengkapan identitas di dashboard admin.
+- **Commit**: 
+  - `[fitur/ui-monokrom 3963a77] feat(order): selaraskan form po standar dan standardisasi data pic serta lokasi workshop`
+  - `[fitur/ui-monokrom 6b4d31b] feat(order): hapus catatan po standar dan selaraskan dialog bukti transfer ke monokrom industrial`
 
 ---
 
-## 4. Rencana Kerja Tahap Berikutnya
+## 4. Kesimpulan Status Ruang Lingkup Home (Tab 0)
 
-### Tahap 3: Redesain Halaman Home (`lib/screens/user/home/home_screen.dart`)
-1. **Industrial Hero Showcase Banner**:
-   - Background gradien Zinc pekat (`#09090B` ke `#000000`).
-   - Slogan resmi: *"WE BUILD THE FUTURE OF MACHINERY"*.
-   - 2 tombol aksi kapsul: *"Jelajahi Produk"* & *"Konsultasi RFQ"*.
-2. **Series Navigation Tabs**:
-   - Filter seri kapsul monokrom (*Semua Lini*, *MD-Coffee Series*, *MD-Cocoa Series*).
-3. **Industrial Machine Card**:
-   - Kartu produk rasio proporsional dengan badge kode model (`MDI-RS50`, dll) dan teks ringkasan fungsi mesin.
+Seluruh komponen dalam ruang lingkup **Home (Tab 0)** beserta seluruh cabang alur belanja dan konsultasi yang berpangkal dari Home telah **100% tuntas diselaraskan dengan website resmi**:
+1. Top Bar, Search Bar Pill, dan Switch Tema Monokrom.
+2. Industrial Hero Showcase Banner Grayscale + 2 Action Pills ("Jelajahi Produk" & "Konsultasi Sales").
+3. Category Navigation Tabs Monokrom Pill (Semua Lini, MD-Coffee, MD-Cocoa).
+4. Section Header & Counter Badge.
+5. Grid 2-Kolom Katalog Mesin (Badge Lini, Kode Model Resmi MDI-xxx, Spesifikasi Ringkas, Harga PO).
+6. Empty State Monokrom saat filter tidak ditemukan.
+7. Detail Mesin (Foto, Kode Model, Fungsi Mesin, Model Kapasitas, Spek Teknis, Deskripsi, Brosur PDF, Video Demo, Bottom Bar Ganda).
+8. Formulir RFQ Kustomisasi Mesin & Generator Tiket WhatsApp Resmi.
+9. Formulir Pemesanan PO Standar 30 Hari & Dialog Pratinjau Slip DP 50% Monokrom.
+10. Kanal Resmi WhatsApp Lead Engineer PT MDI.
