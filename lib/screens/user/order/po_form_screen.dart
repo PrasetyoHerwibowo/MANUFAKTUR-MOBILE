@@ -28,7 +28,6 @@ class _PoFormScreenState extends State<PoFormScreen> {
   late final TextEditingController _picNameController;
   late final TextEditingController _picPhoneController;
   late final TextEditingController _addressController;
-  late final TextEditingController _notesController;
 
   @override
   void initState() {
@@ -44,7 +43,6 @@ class _PoFormScreenState extends State<PoFormScreen> {
     _addressController = TextEditingController(
       text: 'Kawasan Industri MM2100 Blok C-4, Cikarang Barat, Bekasi',
     );
-    _notesController = TextEditingController();
   }
 
   @override
@@ -52,7 +50,6 @@ class _PoFormScreenState extends State<PoFormScreen> {
     _picNameController.dispose();
     _picPhoneController.dispose();
     _addressController.dispose();
-    _notesController.dispose();
     super.dispose();
   }
 
@@ -450,32 +447,6 @@ class _PoFormScreenState extends State<PoFormScreen> {
                         hintText: "Masukkan nama jalan, nomor gedung, blok, kawasan industri, kota/provinsi...",
                         hintStyle: GoogleFonts.inter(fontSize: 12, color: subtextColor),
                         prefixIcon: Icon(Icons.location_on_outlined, size: 18, color: subtextColor),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                        filled: true,
-                        fillColor: inputFill,
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: brandColor)),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    Text(
-                      "Catatan Tambahan untuk Admin (Opsional)",
-                      style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "Bukan instruksi custom mesin. Silakan tulis instruksi khusus pengiriman atau jam operasional gudang.",
-                      style: GoogleFonts.inter(fontSize: 10.5, color: subtextColor),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _notesController,
-                      style: GoogleFonts.inter(fontSize: 12.5, color: textColor),
-                      decoration: InputDecoration(
-                        hintText: "Contoh: Mohon konfirmasi via WA 1 hari sebelum pengiriman unit...",
-                        hintStyle: GoogleFonts.inter(fontSize: 12, color: subtextColor),
-                        prefixIcon: Icon(Icons.chat_bubble_outline_rounded, size: 18, color: subtextColor),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
                         filled: true,
                         fillColor: inputFill,
@@ -893,7 +864,7 @@ class _PoFormScreenState extends State<PoFormScreen> {
                         product: p,
                         quantity: _quantity,
                         deliveryAddress: address,
-                        customNotes: _notesController.text.trim(),
+                        customNotes: '',
                         bankAccount: _selectedBank,
                         proofPath: proof,
                       );
