@@ -35,8 +35,8 @@ Branch aktif pengerjaan: **`fitur/ui-monokrom`**
 | **Tahap 3.1**| Home: Industrial Hero Showcase Banner | ✅ Selesai | `f80c74f` | Hero banner solid, background `GambarBG.jpg` monokrom web, tombol kapsul |
 | **Tahap 3.2**| Home: Series Navigation Tabs & Search Bar | ✅ Selesai | `49074d8` | Tab monokrom pill (Semua Lini, MD-Coffee, MD-Cocoa) & Search bar pill 999px |
 | **Tahap 3.3**| Home: Industrial Machine Card & Clean Layout | ✅ Selesai | `49074d8` | Kode model MDI-xxx, badge lini, rasio 0.58, tombol bulat monokrom, hapus banner ganda |
-| **Tahap 4** | Penyelarasan Halaman Detail Produk | ⏳ Siap Dikerjakan | - | Function Preview Box, Brosur PDF, & Inverted Pill Action |
-| **Tahap 5** | Halaman Custom Order RFQ | ⏳ Mendatang | - | Engineering Helpdesk WA, Dynamic Specs, & Auto-Ticket |
+| **Tahap 4** | Penyelarasan Halaman Detail Produk | ✅ Selesai | `44cd378` | Kode model, Kotak Fungsi Mesin, Tabel Spek, Brosur SOP PDF, Video Demo, Pill CTA |
+| **Tahap 5** | Halaman Custom Order RFQ | ⏳ Siap Dikerjakan | - | Engineering Helpdesk WA, Dynamic Specs, & Auto-Ticket |
 
 ---
 
