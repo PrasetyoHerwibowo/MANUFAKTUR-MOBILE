@@ -406,10 +406,10 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF16A34A).withValues(alpha: 0.15),
+                        color: isDark ? Colors.white12 : const Color(0xFF09090B),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 20),
+                      child: const Icon(Icons.verified_rounded, color: Colors.white, size: 18),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -589,10 +589,10 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF16A34A).withValues(alpha: 0.12),
+                  color: isDark ? Colors.white10 : const Color(0xFF09090B),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 30),
+                child: Icon(Icons.check_rounded, color: isDark ? Colors.white : Colors.white, size: 28),
               ),
               const SizedBox(height: 14),
               Text(
@@ -671,7 +671,7 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
               ),
               const SizedBox(height: 20),
 
-              // WhatsApp Direct Action Button (Pill 999)
+              // WhatsApp Direct Action Button (Pill 999 Inverted Zinc)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -679,17 +679,26 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
                     Navigator.pop(ctx); // Close dialog
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const ContactWhatsappScreen()),
+                      MaterialPageRoute(
+                        builder: (context) => ContactWhatsappScreen(
+                          ticketNumber: ticketNo,
+                          machineContext: machineName,
+                        ),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF16A34A),
-                    foregroundColor: Colors.white,
+                    backgroundColor: isDark ? Colors.white : const Color(0xFF09090B),
+                    foregroundColor: isDark ? const Color(0xFF09090B) : Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                     elevation: 0,
                   ),
-                  icon: const Icon(Icons.chat_bubble_rounded, size: 16, color: Colors.white),
+                  icon: Icon(
+                    Icons.chat_bubble_rounded,
+                    size: 16,
+                    color: isDark ? const Color(0xFF09090B) : Colors.white,
+                  ),
                   label: Text(
                     "Buka WhatsApp Engineer Sekarang",
                     style: GoogleFonts.plusJakartaSans(

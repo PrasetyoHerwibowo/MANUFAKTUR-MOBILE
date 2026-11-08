@@ -36,7 +36,8 @@ Branch aktif pengerjaan: **`fitur/ui-monokrom`**
 | **Tahap 3.2**| Home: Series Navigation Tabs & Search Bar | ✅ Selesai | `49074d8` | Tab monokrom pill (Semua Lini, MD-Coffee, MD-Cocoa) & Search bar pill 999px |
 | **Tahap 3.3**| Home: Industrial Machine Card & Clean Layout | ✅ Selesai | `49074d8` | Kode model MDI-xxx, badge lini, rasio 0.58, tombol bulat monokrom, hapus banner ganda |
 | **Tahap 4** | Penyelarasan Halaman Detail Produk | ✅ Selesai | `44cd378` | Kode model, Kotak Fungsi Mesin, Tabel Spek, Brosur SOP PDF, Video Demo, Pill CTA |
-| **Tahap 5** | Halaman Custom Order RFQ & WhatsApp Gateway | ✅ Selesai | - | Form ringkas 30 detik, Kontak PIC, Auto-Ticket RFQ, Dialog WhatsApp Helpdesk |
+| **Tahap 5** | Halaman Custom Order RFQ & WhatsApp Gateway | ✅ Selesai | `ff11fe0` | Form ringkas 30 detik, Kontak PIC, Auto-Ticket RFQ, Dialog WhatsApp Helpdesk |
+| **Tahap 6** | Halaman Kontak WhatsApp & Dialog Monokrom | ✅ Selesai | - | Desain Industrial Monokrom, hapus hijau norak, Inverted Zinc Pill, banner tiket |
 
 ---
 
@@ -85,7 +86,21 @@ Branch aktif pengerjaan: **`fitur/ui-monokrom`**
   - **Kontak PIC Pengadaan**: Kolom Nama PIC dan Nomor WhatsApp aktif (otomatis terisi dari profil user jika login).
   - **Generator Nomor Tiket RFQ Otomatis**: Menghasilkan tiket antrean resmi (contoh `RFQ-2026-050`) dan mencatatkannya ke `AppState`.
   - **Bottom Action Bar Inverted Zinc Pill**: Tombol kapsul `999px` bertuliskan *"Kirim & Diskusi WA"*.
-  - **Modal Tiket Sukses & WhatsApp Gateway**: Dialog sukses berdesain monokrom yang menampilkan badge nomor tiket resmi, ringkasan penugasan tim engineer, dan tombol hijau kapsul *"Buka WhatsApp Engineer Sekarang"* yang mengarahkan pembeli langsung ke chat WhatsApp helpdesk PT MDI.
+  - **Modal Tiket Sukses & WhatsApp Gateway**: Dialog sukses berdesain monokrom yang menampilkan badge nomor tiket resmi, ringkasan penugasan tim engineer, dan tombol kapsul Inverted Zinc *"Buka WhatsApp Engineer Sekarang"* yang mengarahkan pembeli langsung ke chat WhatsApp helpdesk PT MDI dengan membawa konteks tiket.
+
+---
+
+### Tahap 6: Penyelarasan Halaman Kontak WhatsApp & Dialog Sukses Monokrom
+- **File Dimodifikasi**:
+  1. `lib/screens/user/info/contact_whatsapp_screen.dart`
+  2. `lib/screens/user/order/rfq_custom_order_screen.dart`
+- **Poin Perubahan**:
+  - **Hapus Warna Hijau Norak & Lingkaran Besar**: Menggantikan lingkaran hijau 50px dan tombol hijau kaku dengan tata letak Industrial Monokrom bersih (*Zinc 950, Zinc 200 hairline border, Zinc 100 surface*).
+  - **Header Banner Resmi**: Menggunakan tipografi kokoh *Plus Jakarta Sans* dengan pill badge `"OFFICIAL SUPPORT PT MDI"`.
+  - **Dukungan Tiket Kustomisasi Aktif**: Jika dibuka dari dialog RFQ kustomisasi, halaman otomatis menampilkan banner hitam Zinc 950 berisi nomor tiket resmi dan nama unit mesin untuk memudahkan customer menyebutkan nomor tiket saat chat.
+  - **2 Kartu Kontak Resmi**: Kartu Sales Engineering & Kartu Helpdesk Teknisi dengan tombol kapsul Inverted Zinc `999px`.
+  - **Kartu Workshop & Pabrik Cikarang**: Info lokasi dan jam operasional pabrik yang rapi dengan tipografi monokrom bersih tanpa teks oranye.
+  - **Dialog Tiket Monokrom**: Ikon centang dan tombol *"Buka WhatsApp Engineer Sekarang"* di dialog RFQ diselaraskan menjadi Inverted Zinc Pill monokrom tanpa warna hijau yang bertabrakan.
 
 ---
 

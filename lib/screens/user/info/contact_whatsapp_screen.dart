@@ -1,178 +1,482 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/app_state.dart';
 import '../../../core/theme/app_colors.dart';
 
 class ContactWhatsappScreen extends StatelessWidget {
-  const ContactWhatsappScreen({super.key});
+  final String? ticketNumber;
+  final String? machineContext;
+
+  const ContactWhatsappScreen({
+    super.key,
+    this.ticketNumber,
+    this.machineContext,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+    final isDark = appState.isDarkMode;
+
+    final cardBg = isDark ? AppColors.darkSurface : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final textColor = isDark ? Colors.white : AppColors.textPrimary;
+    final subtextColor = isDark ? AppColors.darkTextSecondary : AppColors.textMuted;
+    final inputFill = isDark ? const Color(0xFF18181B) : const Color(0xFFF4F4F5);
+
+    final bool hasTicket = ticketNumber != null && ticketNumber!.isNotEmpty;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
       appBar: AppBar(
-        title: const Text("Hubungi Tim Support"),
+        backgroundColor: cardBg,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_rounded, color: textColor, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          hasTicket ? "WhatsApp Lead Engineer" : "Pusat Bantuan & WhatsApp Sales",
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 16.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
+            color: textColor,
+          ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: borderColor, height: 1),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF25D366),
-                      shape: BoxShape.circle,
+            // 1. JIKA ADA TIKET: BANNER TIKET MONOKROM
+            if (hasTicket) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF18181B) : const Color(0xFF09090B),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
-                    child: const Icon(Icons.chat_bubble,
-                        color: Colors.white, size: 50),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    "WhatsApp Official Support",
-                    style: GoogleFonts.outfit(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Respon cepat 24/7 dari Tim Engineer & Sales Pabrik",
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  _buildContactCard(
-                    title: "Tim Sales & Quotation",
-                    phone: "+62 812-9876-5432",
-                    desc: "Untuk pertanyaan penawaran harga PO & custom machine.",
-                  ),
-                  const SizedBox(height: 12),
-                  _buildContactCard(
-                    title: "Helpdesk Teknisi & Servis",
-                    phone: "+62 813-1122-3344",
-                    desc: "Untuk konsultasi teknis, kelistrikan, & klaim garansi.",
-                  ),
-                  const SizedBox(height: 24),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Buka aplikasi WhatsApp ke +62 812-9876-5432..."),
-                            backgroundColor: Color(0xFF075E54),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: Colors.white24, width: 0.8),
                           ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF25D366),
-                      ),
-                      icon: const Icon(Icons.chat, color: Colors.white),
-                      label: Text(
-                        "BUKA CHAT WHATSAPP SEKARANG",
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                          child: Text(
+                            "TIKET KUSTOMISASI AKTIF",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
+                        const Spacer(),
+                        Text(
+                          ticketNumber!,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      machineContext ?? "Custom Industrial Machine",
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -0.2,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      "Salin atau sebutkan nomor tiket di atas saat terhubung di chat WhatsApp agar Engineer PT MDI dapat langsung membuka riwayat spesifikasi Anda.",
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: Colors.white70,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(height: 16),
+            ] else ...[
+              // Banner Pengantar Umum (Monokrom Zinc)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF18181B) : const Color(0xFF09090B),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.support_agent_rounded, color: Colors.white, size: 26),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Official Support PT MDI",
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            "Konsultasi penawaran resmi PO, kustomisasi teknis mesin, serta asistensi teknisi pabrik.",
+                            style: GoogleFonts.inter(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // 2. KARTU KONTAK SALES & ENGINEERING
+            _buildSectionLabel("Kanal WhatsApp Resmi", textColor),
+
+            _buildContactCard(
+              context: context,
+              isDark: isDark,
+              cardBg: cardBg,
+              borderColor: borderColor,
+              textColor: textColor,
+              subtextColor: subtextColor,
+              pillBadgeText: "SALES & QUOTATION",
+              title: "Tim Sales Engineering Pabrik",
+              phoneDisplay: "+62 812-9876-5432",
+              desc: "Konsultasi PO 30 Hari, diskusi kalkulasi harga custom mesin, dan penerbitan Surat Penawaran Resmi.",
+              buttonLabel: hasTicket ? "Chat WhatsApp Engineer Sekarang" : "Buka Chat WhatsApp Sales",
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: const Color(0xFF09090B),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    content: Text(
+                      hasTicket
+                          ? "Membuka WhatsApp Sales Engineering untuk Tiket $ticketNumber..."
+                          : "Membuka WhatsApp Sales Engineering (+62 812-9876-5432)...",
+                      style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+                    ),
+                  ),
+                );
+              },
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
-            // Factory Address Location Card
+            _buildContactCard(
+              context: context,
+              isDark: isDark,
+              cardBg: cardBg,
+              borderColor: borderColor,
+              textColor: textColor,
+              subtextColor: subtextColor,
+              pillBadgeText: "TEKNISI & WORKSHOP",
+              title: "Helpdesk Teknisi & Servis",
+              phoneDisplay: "+62 813-1122-3344",
+              desc: "Konsultasi kelistrikan 3-phase/220V, suku cadang mesin kopi & kakao, serta jadwal kunjungan workshop.",
+              buttonLabel: "Buka Chat WhatsApp Teknisi",
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: const Color(0xFF09090B),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    content: Text(
+                      "Membuka WhatsApp Helpdesk Teknisi (+62 813-1122-3344)...",
+                      style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 18),
+
+            // 3. KARTU ALAMAT WORKSHOP & PABRIK (MONOKROM INDUSTRIAL)
+            _buildSectionLabel("Lokasi Workshop & Fabrikasi", textColor),
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.border),
+                color: cardBg,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: borderColor),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.factory, color: AppColors.primary),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: inputFill,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: borderColor, width: 0.8),
+                        ),
+                        child: Icon(
+                          Icons.precision_manufacturing_rounded,
+                          color: textColor,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "PT Manufactur Dynamic Indonesia",
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: textColor,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                            Text(
+                              "Pabrik Perakitan Mesin Kopi & Kakao",
+                              style: GoogleFonts.inter(
+                                fontSize: 10.5,
+                                color: subtextColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Divider(color: borderColor, height: 1),
+                  const SizedBox(height: 10),
+
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.location_on_outlined, size: 16, color: subtextColor),
                       const SizedBox(width: 8),
-                      Text(
-                        "Alamat Workshop & Factory",
-                        style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          "Kawasan Industri Jababeka V, Blok C-12, Cikarang, Jawa Barat 17530",
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            color: textColor,
+                            height: 1.35,
+                          ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    "Kawasan Industri Jababeka V, Blok C-12, Cikarang, Jawa Barat 17530",
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Jam Operasional: Senin - Sabtu (08.00 - 17.00 WIB)",
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      color: AppColors.textMuted,
-                    ),
+
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.schedule_outlined, size: 16, color: subtextColor),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "Senin – Sabtu (08.00 – 17.00 WIB)\nKunjungan fisik untuk uji coba mesin wajib reservasi terlebih dahulu.",
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: subtextColor,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
+
+            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildContactCard(
-      {required String title, required String phone, required String desc}) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
+  Widget _buildSectionLabel(String title, Color textColor) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      child: Text(
+        title,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+          color: textColor,
+          letterSpacing: -0.2,
+        ),
       ),
-      child: Row(
+    );
+  }
+
+  Widget _buildContactCard({
+    required BuildContext context,
+    required bool isDark,
+    required Color cardBg,
+    required Color borderColor,
+    required Color textColor,
+    required Color subtextColor,
+    required String pillBadgeText,
+    required String title,
+    required String phoneDisplay,
+    required String desc,
+    required String buttonLabel,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.phone_android, color: AppColors.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.bold, fontSize: 13)),
-                Text(phone,
-                    style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: AppColors.secondary)),
-                Text(desc,
-                    style: const TextStyle(fontSize: 10, color: Colors.grey)),
-              ],
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF27272A) : const Color(0xFFF4F4F5),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: borderColor, width: 0.8),
+                ),
+                child: Text(
+                  pillBadgeText,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                    color: isDark ? Colors.white70 : const Color(0xFF09090B),
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                phoneDisplay,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: textColor,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          Text(
+            title,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: textColor,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            desc,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: subtextColor,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Inverted Zinc Pill Button (999px)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onTap,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark ? Colors.white : const Color(0xFF09090B),
+                foregroundColor: isDark ? const Color(0xFF09090B) : Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                elevation: 0,
+              ),
+              icon: Icon(
+                Icons.chat_bubble_rounded,
+                size: 15,
+                color: isDark ? const Color(0xFF09090B) : Colors.white,
+              ),
+              label: Text(
+                buttonLabel,
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                  letterSpacing: -0.2,
+                ),
+              ),
             ),
           ),
         ],
