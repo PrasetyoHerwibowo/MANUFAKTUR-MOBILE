@@ -12,6 +12,8 @@ class MockData {
         ProductModel(
           id: 'PROD-ROAST-01',
           name: 'MicroRoast 100g Lab Sample Roaster',
+          modelCode: 'MDI-RS01',
+          function: 'Mesin sangrai sampel lab untuk kalibrasi profil roasting presisi skala mikro.',
           category: 'Roaster Kopi',
           commodity: 'Kopi',
           processStage: 'Hilir',
@@ -42,6 +44,8 @@ class MockData {
         ProductModel(
           id: 'PROD-ROAST-04',
           name: 'ProRoast 1 kg / Batch Shop Roaster',
+          modelCode: 'MDI-RS04',
+          function: 'Shop roaster kapasitas 1 kg/batch untuk specialty coffee shop dan micro-roastery.',
           category: 'Roaster Kopi',
           commodity: 'Kopi',
           processStage: 'Hilir',
@@ -72,6 +76,8 @@ class MockData {
         ProductModel(
           id: 'PROD-ROAST-08',
           name: 'Artisan Series 5 kg Double Wall Roaster',
+          modelCode: 'MDI-RS50',
+          function: 'Mesin roasting kapasitas komersial dengan double wall drum untuk roastery berkembang.',
           category: 'Roaster Kopi',
           commodity: 'Kopi',
           processStage: 'Hilir',
@@ -128,6 +134,8 @@ class MockData {
         ProductModel(
           id: 'PROD-ROAST-16',
           name: 'GigantRoast 80 kg Full Industrial Plant Roaster',
+          modelCode: 'MDI-RS80',
+          function: 'Pabrik sangrai industri berat kapasitas 80 kg/batch dengan modulasi burner otomatis dan afterburner.',
           category: 'Roaster Kopi',
           commodity: 'Kopi',
           processStage: 'Hilir',
@@ -162,6 +170,8 @@ class MockData {
         ProductModel(
           id: 'PROD-HKP-01',
           name: 'Mesin Pulper Kopi Basah Single Roll',
+          modelCode: 'MDI-PL200',
+          function: 'Memisahkan biji kopi dari kulit buah segar pascapanen sehingga proses fermentasi seragam.',
           category: 'Mesin Kopi',
           commodity: 'Kopi',
           processStage: 'Hulu',
@@ -192,6 +202,8 @@ class MockData {
         ProductModel(
           id: 'PROD-HKP-05',
           name: 'Mesin Huller Kopi Kering Standar UMKM',
+          modelCode: 'MDI-HL150',
+          function: 'Mengupas kulit tanduk dan kulit ari kering dengan efisiensi tinggi serta tingkat patah minimal.',
           category: 'Mesin Kopi',
           commodity: 'Kopi',
           processStage: 'Hulu',
@@ -222,6 +234,8 @@ class MockData {
         ProductModel(
           id: 'PROD-HKP-16',
           name: 'Mesin Espresso Komersial 3-Group Multi Boiler Barista Pro',
+          modelCode: 'MDI-ESP03',
+          function: 'Mesin espresso komersial 3-group dengan multi boiler independen dan dual PID presisi tinggi.',
           category: 'Mesin Kopi',
           commodity: 'Kopi',
           processStage: 'Hilir',
@@ -256,6 +270,8 @@ class MockData {
         ProductModel(
           id: 'PROD-KKO-01',
           name: 'Mesin Pemecah Buah Kakao & Pemisah Biji (Pod Breaker)',
+          modelCode: 'MDI-FM500',
+          function: 'Membelah buah kakao matang dan memisahkan biji basah dari kulit secara mekanis higienis.',
           category: 'Mesin Kakao',
           commodity: 'Kakao',
           processStage: 'Hulu',
@@ -286,6 +302,8 @@ class MockData {
         ProductModel(
           id: 'PROD-KKO-04',
           name: 'Mesin Sangrai Biji Kakao Rotary Roaster',
+          modelCode: 'MDI-DR1000',
+          function: 'Menyangrai biji kakao dengan drum putar stainless 304 terkontrol untuk aroma cokelat optimal.',
           category: 'Mesin Kakao',
           commodity: 'Kakao',
           processStage: 'Hilir',
@@ -316,6 +334,8 @@ class MockData {
         ProductModel(
           id: 'PROD-KKO-07',
           name: 'Mesin Penghalus Bubuk Kakao & Pulverizer Disk Mill',
+          modelCode: 'MDI-GR30',
+          function: 'Menggiling bungkil kakao menjadi bubuk cokelat ekstra halus hingga 200 mesh dengan sistem pendingin.',
           category: 'Mesin Kakao',
           commodity: 'Kakao',
           processStage: 'Hilir',
