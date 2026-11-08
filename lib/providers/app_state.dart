@@ -595,6 +595,8 @@ class AppState extends ChangeNotifier {
       deliveryAddress: deliveryAddress,
       customNotes: customNotes,
       serialNumber: 'SN-2026-MDI-8820',
+      imageUrl: product.imageUrl,
+      description: product.description,
     );
 
     // Kirim Purchase Order ke Backend Laravel & upload bukti ke Supabase Storage

@@ -24,6 +24,7 @@ class CustomOrderModel {
   String? quotationPrice; // e.g. Rp 115.000.000
   String? quotationNotes;
   String? attachmentFileName;
+  final String? imageUrl;
 
   CustomOrderModel({
     required this.id,
@@ -43,6 +44,7 @@ class CustomOrderModel {
     this.quotationPrice,
     this.quotationNotes,
     this.attachmentFileName,
+    this.imageUrl,
   });
 
   String get statusTitle {

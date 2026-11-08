@@ -33,8 +33,8 @@ class NotificationSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
-    final notifications = appState.notifications;
     final isDark = appState.isDarkMode;
+    final notifications = appState.notifications;
     final unreadCount = appState.unreadNotificationsCount;
 
     final bgColor = isDark ? AppColors.darkSurface : Colors.white;

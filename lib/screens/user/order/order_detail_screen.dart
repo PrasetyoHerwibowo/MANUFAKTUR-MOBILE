@@ -1,17 +1,16 @@
-import 'dart:convert';
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:timeline_tile/timeline_tile.dart';
 import '../../../core/utils/file_picker_helper.dart';
 import '../../../providers/app_state.dart';
 import '../../../core/models/order_model.dart';
+import '../../../core/models/product_model.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/pdf_preview_dialog.dart';
-
 import '../service/booking_service_screen.dart';
 import '../service/warranty_claim_screen.dart';
+import '../info/contact_whatsapp_screen.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final OrderModel order;
@@ -24,33 +23,68 @@ class OrderDetailScreen extends StatefulWidget {
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
   String? _pelunasanProofName;
-  UploadResult? _pelunasanUploadResult;
-  String? _dpProofName;
-  UploadResult? _dpUploadResult;
+
+  String _formatCurrency(double amount) {
+    return "Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}";
+  }
+
+  ProductModel? _findMatchingProduct(AppState appState, String productName) {
+    final matches = appState.products.where(
+      (p) =>
+          p.name.toLowerCase().contains(productName.toLowerCase()) ||
+          productName.toLowerCase().contains(p.name.toLowerCase()),
+    );
+    if (matches.isNotEmpty) return matches.first;
+    return null;
+  }
+
+  String _resolveImageUrl(ProductModel? matchedProduct, OrderModel order) {
+    if (order.imageUrl != null && order.imageUrl!.isNotEmpty) {
+      return order.imageUrl!;
+    }
+    if (matchedProduct != null && matchedProduct.imageUrl.isNotEmpty) {
+      return matchedProduct.imageUrl;
+    }
+    return 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&auto=format&fit=crop&q=80';
+  }
+
+  String _resolveDescription(ProductModel? matchedProduct, OrderModel order) {
+    if (order.description != null && order.description!.isNotEmpty) {
+      return order.description!;
+    }
+    if (matchedProduct != null && matchedProduct.description.isNotEmpty) {
+      return matchedProduct.description;
+    }
+    return "Unit mesin manufaktur berstandar industri dengan sertifikasi kualitas presisi tinggi, material food-grade stainless steel 304, dan garansi resmi pabrik.";
+  }
 
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
-    // Ambil order secara reaktif dari AppState agar update status langsung tampil realtime di layar
-    final o = appState.orders.firstWhere(
-      (item) => item.id == widget.order.id || item.poNumber == widget.order.poNumber,
-      orElse: () => widget.order,
-    );
+    final isDark = appState.isDarkMode;
+    final o = widget.order;
 
-    final totalFormatted =
-        "Rp ${o.totalAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}";
-    final dpFormatted =
-        "Rp ${o.dpAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}";
-    final sisaFormatted =
-        "Rp ${o.pelunasanAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}";
+    final totalFormatted = _formatCurrency(o.totalAmount);
+    final dpFormatted = _formatCurrency(o.dpAmount);
+    final sisaFormatted = _formatCurrency(o.pelunasanAmount);
+
+    final matchedProduct = _findMatchingProduct(appState, o.productName);
+    final imageUrl = _resolveImageUrl(matchedProduct, o);
+    final description = _resolveDescription(matchedProduct, o);
+    final specs = matchedProduct?.specifications;
+
+    final grayIconColor = isDark ? Colors.white60 : const Color(0xFF64748B);
 
     return Scaffold(
-      backgroundColor: appState.isDarkMode ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
       appBar: AppBar(
-        title: Text("Detail Pesanan ${o.poNumber}"),
+        title: Text(
+          "Detail Pesanan ${o.poNumber}",
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 17),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.picture_as_pdf),
+            icon: const Icon(Icons.picture_as_pdf_outlined),
             tooltip: "Download Invoice PDF",
             onPressed: () {
               showDialog(
@@ -71,201 +105,486 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               );
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.support_agent_rounded),
+            tooltip: "Konsultasi Teknisi Pabrik",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ContactWhatsappScreen(),
+                ),
+              );
+            },
+          ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        physics: const BouncingScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Status Header Banner
+            // ================= 1. BAGIAN PALING ATAS: GAMBAR & DESKRIPSI PRODUK =================
             Container(
-              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: appState.isDarkMode ? AppColors.darkSurface : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: appState.isDarkMode ? Colors.white10 : AppColors.border),
+                color: isDark ? AppColors.darkSurface : Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: isDark ? Colors.white10 : AppColors.border),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
+              clipBehavior: Clip.antiAlias,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        o.poNumber,
-                        style: GoogleFonts.outfit(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: appState.isDarkMode ? Colors.white : AppColors.primary,
+                  // Foto Produk Bersih (Tanpa Teks Menempel di Gambar)
+                  Image.network(
+                    imageUrl,
+                    width: double.infinity,
+                    height: 220,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      width: double.infinity,
+                      height: 180,
+                      color: isDark ? AppColors.darkBackground : const Color(0xFFF1F5F9),
+                      child: Center(
+                        child: Icon(
+                          Icons.precision_manufacturing_rounded,
+                          size: 48,
+                          color: isDark ? Colors.white70 : const Color(0xFF475569),
                         ),
                       ),
-                      Text(
-                        o.orderDate,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: appState.isDarkMode ? AppColors.darkTextSecondary : AppColors.textMuted,
+                    ),
+                  ),
+
+                  // Detail & Deskripsi Mesin
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Teks Kategori & Jumlah Unit Dipindahkan ke SINI (Di Atas Nama Produk)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                                  width: 0.6,
+                                ),
+                              ),
+                              child: Text(
+                                o.category.toUpperCase(),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isDark ? Colors.white12 : AppColors.border,
+                                ),
+                              ),
+                              child: Text(
+                                "${o.quantity} Unit Dipesan",
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white70 : AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 20),
-                  Row(
-                    children: [
-                      Expanded(child: _buildInfoColumn("Perusahaan", o.companyName)),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildInfoColumn("Tgl PO", o.orderDate)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(child: _buildInfoColumn("Nomor Seri Mesin", o.serialNumber)),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildInfoColumn("Estimasi Selesai", o.estimatedCompletionDate)),
-                    ],
+                        const SizedBox(height: 10),
+
+                        // Nama Produk Mesin (Misal: Artisan Espresso Craft Pro 2G)
+                        Text(
+                          o.productName,
+                          style: GoogleFonts.outfit(
+                            fontSize: 19,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Deskripsi Mesin
+                        Text(
+                          description,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12.5,
+                            height: 1.5,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                          ),
+                        ),
+
+                        // Technical Specs Highlights
+                        if (specs != null) ...[
+                          const SizedBox(height: 14),
+                          Divider(color: isDark ? Colors.white10 : AppColors.border),
+                          const SizedBox(height: 10),
+                          Text(
+                            "SPESIFIKASI TEKNIS MESIN",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              color: isDark ? Colors.white70 : const Color(0xFF475569),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _buildSpecBadge(Icons.straighten_rounded, "Tipe", specs.tipe, isDark),
+                              _buildSpecBadge(Icons.speed_rounded, "Kapasitas", specs.kapasitas, isDark),
+                              _buildSpecBadge(Icons.bolt_rounded, "Daya", specs.dayaListrik, isDark),
+                              _buildSpecBadge(Icons.square_foot_rounded, "Dimensi", specs.dimensi, isDark),
+                              if (specs.materialBoiler.isNotEmpty)
+                                _buildSpecBadge(Icons.shield_outlined, "Material", specs.materialBoiler, isDark),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            // DYNAMIC ALERT FOR "VERIFIKASI DP 50%" (STAGE 1)
-            if (o.status == OrderStatus.verifikasiDp) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.amber.shade700, width: 1.5),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+            // ================= 2. DIBAWAHNYA: CARD DETAIL PESANAN & PENGIRIMAN =================
+            _buildSectionTitle("Detail Pesanan & Pengiriman", isDark),
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: isDark ? Colors.white10 : AppColors.border),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 2A. Header PO
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.hourglass_top_rounded,
-                            color: Colors.amber.shade800, size: 28),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "STATUS: VERIFIKASI PEMBAYARAN DP (50%)",
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: Colors.amber.shade800,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.description_rounded,
+                                    size: 18,
+                                    color: isDark ? Colors.white70 : const Color(0xFF475569),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  o.poNumber,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark ? Colors.white : AppColors.primary,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: isDark ? Colors.white12 : AppColors.border),
+                              ),
+                              child: Text(
+                                "${o.quantity} Unit Mesin",
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white70 : AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildInfoColumn("Tanggal PO Terbit", o.orderDate, isDark),
+                            _buildInfoColumn("Nomor Seri Mesin", o.serialNumber, isDark, crossAlignEnd: true),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Bukti transfer Down Payment (50%) sebesar $dpFormatted telah terkirim dan sedang dalam proses validasi oleh Tim Finance Pabrik.\n\nSetelah admin mengkonfirmasi bukti valid pada dashboard website, status produksi akan otomatis diperbarui.",
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: appState.isDarkMode ? Colors.white70 : AppColors.textPrimary,
+                  ),
+
+                  Divider(
+                    height: 1,
+                    color: isDark ? Colors.white10 : AppColors.border,
+                  ),
+
+                  // 2B. Detail Pemesan & Alamat Pengiriman Menjadi SATU Bagian (Icon Abu-Abu, Tanpa Email)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white10 : Colors.grey.shade100,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.person_pin_circle_rounded,
+                                color: grayIconColor,
+                                size: 16,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Informasi Pemesan & Alamat Pengiriman",
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white70 : Colors.grey.shade800,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Perusahaan Pemesan
+                        _buildDetailRow(
+                          icon: Icons.business_rounded,
+                          label: "Perusahaan Pemesan",
+                          value: o.companyName,
+                          isDark: isDark,
+                          isBold: true,
+                          iconColor: grayIconColor,
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Nama Kontak / PIC Pemesan
+                        _buildDetailRow(
+                          icon: Icons.person_outline_rounded,
+                          label: "Nama Kontak Pemesan (PIC)",
+                          value: o.contactPerson,
+                          isDark: isDark,
+                          iconColor: grayIconColor,
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Nomor Telepon / WhatsApp Pemesan
+                        _buildDetailRow(
+                          icon: Icons.phone_outlined,
+                          label: "Nomor Telepon / WhatsApp",
+                          value: o.buyerPhone,
+                          isDark: isDark,
+                          iconColor: grayIconColor,
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Alamat Tujuan Pengiriman (Icon abu-abu)
+                        _buildDetailRow(
+                          icon: Icons.location_on_outlined,
+                          label: "Alamat Tujuan Pengiriman",
+                          value: o.deliveryAddress,
+                          isDark: isDark,
+                          iconColor: grayIconColor,
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Target Estimasi Pengiriman Pabrik (Icon abu-abu)
+                        _buildDetailRow(
+                          icon: Icons.local_shipping_outlined,
+                          label: "Estimasi Pengiriman Pabrik",
+                          value: o.estimatedCompletionDate,
+                          isDark: isDark,
+                          iconColor: grayIconColor,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Catatan Kustomisasi (jika ada)
+                  if (o.customNotes.isNotEmpty) ...[
+                    Divider(
+                      height: 1,
+                      color: isDark ? Colors.white10 : AppColors.border,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.amber.withValues(alpha: 0.12)
+                              : const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.amber.withValues(alpha: 0.3)
+                                : const Color(0xFFFDE68A),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.edit_note_rounded,
+                              color: Color(0xFFD97706),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Catatan Kustomisasi Produksi:",
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.amber.shade200 : const Color(0xFF92400E),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    o.customNotes,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11.5,
+                                      height: 1.35,
+                                      color: isDark ? Colors.white70 : const Color(0xFF78350F),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
-              const SizedBox(height: 20),
-            ],
+            ),
 
-            // DYNAMIC ALERT FOR "BUKTI DP DITOLAK" (STAGE 1 REJECTED)
-            if (o.status == OrderStatus.dpDitolak) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.red.shade600, width: 1.5),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.cancel_outlined,
-                            color: Colors.red.shade700, size: 28),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "STATUS: BUKTI DP DITOLAK (TIDAK VALID)",
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: Colors.red.shade700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Bukti pembayaran DP 50% dinyatakan tidak valid oleh Admin Finance Pabrik.${o.rejectionReason != null && o.rejectionReason!.isNotEmpty ? '\n\nCatatan Admin: "${o.rejectionReason}"' : '\n\nMohon pastikan nominal transfer sesuai ($dpFormatted) dan foto/struk terlihat jelas.'}\n\nSilakan unggah ulang bukti transfer yang valid agar pesanan dapat segera diproses.",
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: appState.isDarkMode ? Colors.white70 : AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _showReuploadDpModal(context, appState, o),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red.shade700,
-                          foregroundColor: Colors.white,
-                        ),
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text("UNGGAH ULANG BUKTI DP (50%)"),
-                      ),
-                    ),
-                  ],
-                ),
+            const SizedBox(height: 18),
+
+            // ================= 3. CARD TIMELINE PELACAKAN PRODUKSI (7 TAHAP) =================
+            _buildSectionTitle("Timeline Pelacakan Produksi (7 Tahap)", isDark),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: isDark ? Colors.white10 : AppColors.border),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-            ],
+              child: Column(
+                children: [
+                  _buildTimelineTile(
+                    title: "1. Verifikasi DP 50%",
+                    subtitle: "DP Rp $dpFormatted telah terverifikasi oleh Finance.",
+                    isFirst: true,
+                    isDone: o.currentStageIndex >= 0,
+                    isActive: o.currentStageIndex == 0,
+                    isDark: isDark,
+                  ),
+                  _buildTimelineTile(
+                    title: "2. Persiapan Bahan Baku & Sourcing",
+                    subtitle: "Pemotongan frame stainless 304, penyiapan drum & komponen kelistrikan.",
+                    isDone: o.currentStageIndex >= 1,
+                    isActive: o.currentStageIndex == 1,
+                    isDark: isDark,
+                  ),
+                  _buildTimelineTile(
+                    title: "3. Proses Produksi / Assembly",
+                    subtitle: "Pengelasan boiler, perakitan wiring PID & pompa rotari presisi.",
+                    isDone: o.currentStageIndex >= 2,
+                    isActive: o.currentStageIndex == 2,
+                    isDark: isDark,
+                  ),
+                  _buildTimelineTile(
+                    title: "4. Quality Control (QC) & Pressure Test",
+                    subtitle: "Pengujian tekanan hidrostatik 100 Bar & kestabilan suhu extraction.",
+                    isDone: o.currentStageIndex >= 3,
+                    isActive: o.currentStageIndex == 3,
+                    isDark: isDark,
+                  ),
+                  _buildTimelineTile(
+                    title: "5. Menunggu Pelunasan Sisa 50%",
+                    subtitle: "Tagihan pelunasan $sisaFormatted terbit sebelum pengiriman kargo.",
+                    isDone: o.currentStageIndex >= 4,
+                    isActive: o.currentStageIndex == 4,
+                    isDark: isDark,
+                  ),
+                  _buildTimelineTile(
+                    title: "6. Pengiriman & Instalasi Teknisi",
+                    subtitle: "Pengiriman kargo industri, pengantaran on-site & instalasi teknisi pabrik.",
+                    isDone: o.currentStageIndex >= 5,
+                    isActive: o.currentStageIndex == 5,
+                    isDark: isDark,
+                  ),
+                  _buildTimelineTile(
+                    title: "7. After-Sales Service & Garansi Aktif",
+                    subtitle: "Unit mesin aktif beroperasi, garansi 2 tahun & servis berkala.",
+                    isLast: true,
+                    isDone: o.currentStageIndex >= 6,
+                    isActive: o.currentStageIndex == 6,
+                    isDark: isDark,
+                  ),
 
-            // DYNAMIC ALERT FOR "MENUNGGU PELUNASAN" (STAGE 5)
-            if (o.status == OrderStatus.menungguPelunasan) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.warning, width: 1.5),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.warning_amber_rounded,
-                            color: AppColors.warning, size: 28),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "STATUS: MENUNGGU PELUNASAN SISA 50%",
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: AppColors.warning,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Mesin telah lulus Quality Control (QC) & siap dikirim. Silakan unggah bukti transfer pelunasan sisa 50% ($sisaFormatted).",
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: appState.isDarkMode ? Colors.white70 : AppColors.textPrimary,
-                      ),
-                    ),
+                  // Tombol Pelunasan jika tahap 5
+                  if (o.status == OrderStatus.menungguPelunasan) ...[
                     const SizedBox(height: 14),
                     SizedBox(
                       width: double.infinity,
@@ -273,188 +592,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         onPressed: () => _showPelunasanModal(context, appState, o),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.warning,
-                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 11),
                         ),
-                        icon: const Icon(Icons.upload_file),
-                        label: const Text("FORMULIR UPLOAD PELUNASAN (50%)"),
+                        icon: const Icon(Icons.upload_file, size: 18),
+                        label: const Text(
+                          "UPLOAD BUKTI PELUNASAN (50%)",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
                       ),
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
 
-            // DYNAMIC ALERT FOR "VERIFIKASI PELUNASAN" (STAGE 5b - MENUNGGU ACC ADMIN)
-            if (o.status == OrderStatus.verifikasiPelunasan) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0284C7).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF0284C7), width: 1.5),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.hourglass_top_rounded,
-                            color: Color(0xFF0284C7), size: 28),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "STATUS: MENUNGGU VERIFIKASI PELUNASAN",
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: const Color(0xFF0284C7),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Bukti transfer pelunasan sisa 50% ($sisaFormatted) telah berhasil diunggah. Saat ini admin finance sedang memverifikasi keabsahan pembayaran Anda.\n\nStatus akan diperbarui ke 'Pengiriman & Instalasi' setelah admin mengonfirmasi bukti tersebut VALID di dashboard website.",
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: appState.isDarkMode ? Colors.white70 : AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0284C7).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.check_circle, size: 16, color: Color(0xFF0284C7)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _pelunasanProofName ?? "Bukti transfer tersimpan & terkirim ke server",
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF0284C7),
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => _showPelunasanModal(context, appState, o),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: const Text("Ganti Bukti", style: TextStyle(fontSize: 11)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-
-            // DYNAMIC ALERT FOR "PELUNASAN DITOLAK" (STAGE 5 REJECTED)
-            if (o.status == OrderStatus.pelunasanDitolak) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.red.shade600, width: 1.5),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.error_outline_rounded,
-                            color: Colors.red.shade700, size: 28),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "STATUS: BUKTI PELUNASAN DITOLAK (TIDAK VALID)",
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: Colors.red.shade700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Bukti pembayaran pelunasan 50% dinyatakan tidak valid oleh Admin Finance Pabrik.${o.rejectionReason != null && o.rejectionReason!.isNotEmpty ? '\n\nCatatan Admin: "${o.rejectionReason}"' : '\n\nNominal transfer tidak sesuai atau gambar bukti buram/tidak terbaca.'}\n\nSilakan unggah kembali bukti pelunasan yang valid agar jadwal pengiriman unit dapat segera diterbitkan.",
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: appState.isDarkMode ? Colors.white70 : AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _showPelunasanModal(context, appState, o),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red.shade700,
-                          foregroundColor: Colors.white,
-                        ),
-                        icon: const Icon(Icons.upload_file),
-                        label: const Text("UNGGAH ULANG BUKTI PELUNASAN (50%)"),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-
-            // DYNAMIC ALERT FOR "PENGIRIMAN & INSTALASI" (STAGE 6)
-            if (o.status == OrderStatus.pengirimanInstalasi) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.blue.shade700, width: 1.5),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.local_shipping, color: Colors.blue.shade700, size: 28),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "STATUS: PENGIRIMAN & INSTALASI TEKNISI",
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: Colors.blue.shade700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Pelunasan 50% telah diterima. Unit mesin sedang dalam perjalanan kargo & teknisi pabrik siap melakukan instalasi di lokasi Anda.",
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: appState.isDarkMode ? Colors.white70 : AppColors.textPrimary,
-                      ),
-                    ),
+                  // Tombol Konfirmasi Pengiriman jika tahap 6
+                  if (o.status == OrderStatus.pengirimanInstalasi) ...[
                     const SizedBox(height: 14),
                     SizedBox(
                       width: double.infinity,
@@ -470,103 +620,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue.shade700,
+                          padding: const EdgeInsets.symmetric(vertical: 11),
                         ),
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: const Text("KONFIRMASI UNIT TERPASANG & AKTIFKAN AFTER-SALES"),
+                        icon: const Icon(Icons.check_circle_outline, size: 18),
+                        label: const Text(
+                          "KONFIRMASI UNIT TERPASANG",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5),
+                        ),
                       ),
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
 
-            // DYNAMIC CARD FOR "AFTER-SALES SERVICE" (STAGE 7)
-            if (o.status == OrderStatus.afterSalesService) ...[
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF064E3B),
-                      Color(0xFF047857),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.green.withValues(alpha: 0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.verified, color: Colors.amber, size: 28),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "7. AFTER-SALES SERVICE & GARANSI RESMI",
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: Colors.white,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Unit mesin telah terpasang dan beroperasi penuh. Garansi resmi 2 tahun aktif untuk suku cadang & servis teknisi on-site.",
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: Colors.white70,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black26,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "No. Seri Mesin: ${o.serialNumber}",
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade400,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              "GARANSI AKTIF",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  // Tombol Servis & Garansi jika tahap 7
+                  if (o.status == OrderStatus.afterSalesService) ...[
                     const SizedBox(height: 14),
                     Row(
                       children: [
@@ -581,14 +647,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                               );
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFF064E3B),
-                              padding: const EdgeInsets.symmetric(vertical: 11),
+                              backgroundColor: const Color(0xFF047857),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 10),
                             ),
                             icon: const Icon(Icons.handyman, size: 16),
                             label: const Text(
                               "Booking Servis",
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
@@ -605,213 +671,191 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                               );
                             },
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: const BorderSide(color: Colors.white, width: 1.5),
-                              padding: const EdgeInsets.symmetric(vertical: 11),
+                              foregroundColor: const Color(0xFF047857),
+                              side: const BorderSide(color: Color(0xFF047857), width: 1.5),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
                             ),
-                            icon: const Icon(Icons.shield, size: 16, color: Colors.white),
+                            icon: const Icon(Icons.shield, size: 16),
                             label: const Text(
                               "Klaim Garansi",
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
                       ],
                     ),
                   ],
-                ),
+                ],
               ),
-              const SizedBox(height: 20),
-            ],
+            ),
 
-            // Informasi Pengiriman & Catatan Pabrik
-            _buildSectionTitle("Informasi Pengiriman & Spesifikasi"),
+            const SizedBox(height: 18),
+
+            // ================= 4. CARD TERAKHIR: RINCIAN PEMBAYARAN & INVOICE =================
+            _buildSectionTitle("Rincian Pembayaran & Invoice", isDark),
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: appState.isDarkMode ? AppColors.darkSurface : Colors.white,
+                color: isDark ? AppColors.darkSurface : Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: appState.isDarkMode ? Colors.white10 : AppColors.border),
+                border: Border.all(color: isDark ? Colors.white10 : AppColors.border),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.local_shipping_outlined,
-                          color: Color(0xFF2563EB),
-                          size: 20,
+                      Text(
+                        "Total Nilai PO (${o.quantity} Unit)",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12.5,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Alamat Pengiriman:",
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: appState.isDarkMode ? Colors.white70 : AppColors.textSecondary,
-                              ),
+                      Text(
+                        totalFormatted,
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.check_circle_rounded, size: 15, color: AppColors.success),
+                          const SizedBox(width: 4),
+                          Text(
+                            "DP 50% (Lunas Terverifikasi):",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: isDark ? Colors.white70 : AppColors.textSecondary,
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              o.deliveryAddress,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12.5,
-                                color: appState.isDarkMode ? Colors.white : AppColors.textPrimary,
-                              ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        dpFormatted,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: AppColors.success,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            o.pelunasanProofPath != null
+                                ? Icons.check_circle_rounded
+                                : Icons.hourglass_top_rounded,
+                            size: 15,
+                            color: o.pelunasanProofPath != null
+                                ? AppColors.success
+                                : AppColors.warning,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "Pelunasan Sisa 50%:",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: isDark ? Colors.white70 : AppColors.textSecondary,
                             ),
-                          ],
+                          ),
+                        ],
+                      ),
+                      Text(
+                        sisaFormatted,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: o.pelunasanProofPath != null
+                              ? AppColors.success
+                              : AppColors.warning,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Divider(
+                    height: 24,
+                    color: isDark ? Colors.white10 : AppColors.border,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "TOTAL TAGIHAN PO",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        totalFormatted,
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: isDark ? Colors.white : AppColors.primary,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
-                  Divider(
-                    height: 1,
-                    color: appState.isDarkMode ? Colors.white10 : AppColors.border,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildInfoColumn(
-                          "Estimasi Pengiriman Pabrik",
-                          o.estimatedCompletionDate,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildInfoColumn(
-                          "Metode Logistik",
-                          "Kargo Khusus Pabrik",
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (o.customNotes.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: appState.isDarkMode ? 0.12 : 0.08),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.amber.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.note_alt_outlined, size: 16, color: Color(0xFFB45309)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              "Catatan Khusus: ${o.customNotes}",
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11.5,
-                                fontStyle: FontStyle.italic,
-                                color: appState.isDarkMode ? Colors.amber.shade200 : const Color(0xFFB45309),
-                              ),
-                            ),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => PdfPreviewModal(
+                            title: "PDF Invoice & Faktur Pajak",
+                            subtitle: o.poNumber,
+                            pdfType: "INVOICE",
+                            data: {
+                              'poNumber': o.poNumber,
+                              'company': o.companyName,
+                              'productName': o.productName,
+                              'total': totalFormatted,
+                              'dp': dpFormatted,
+                              'pelunasan': sisaFormatted,
+                            },
                           ),
-                        ],
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
+                        side: BorderSide(
+                          color: isDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                      label: const Text(
+                        "DOWNLOAD DOKUMEN INVOICE & FAKTUR",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                     ),
-                  ],
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Item Details Card
-            _buildSectionTitle("Rincian Mesin Dipesan"),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: appState.isDarkMode ? AppColors.darkSurface : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: appState.isDarkMode ? Colors.white10 : AppColors.border),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          o.productName,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontWeight: FontWeight.bold,
-                            color: appState.isDarkMode ? Colors.white : AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        "x${o.quantity} Unit",
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.bold,
-                          color: appState.isDarkMode ? Colors.white : AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text("DP 50% (Terbayar):",
-                          style: TextStyle(fontSize: 12, color: Colors.grey)),
-                      Text(dpFormatted,
-                          style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.success,
-                              fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text("Pelunasan 50%:",
-                          style: TextStyle(fontSize: 12, color: Colors.grey)),
-                      Text(sisaFormatted,
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: o.pelunasanProofPath != null
-                                  ? AppColors.success
-                                  : AppColors.warning,
-                              fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  const Divider(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("TOTAL BILLING PO",
-                          style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.bold, fontSize: 13)),
-                      Text(totalFormatted,
-                          style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: AppColors.primary)),
-                    ],
                   ),
                 ],
               ),
@@ -822,50 +866,198 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0, left: 4),
       child: Text(
         title,
         style: GoogleFonts.outfit(
-          fontSize: 15,
+          fontSize: 14.5,
           fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
+          color: isDark ? Colors.white : AppColors.textPrimary,
         ),
       ),
     );
   }
 
-  Widget _buildInfoColumn(String label, String value) {
+  Widget _buildInfoColumn(String label, String value, bool isDark, {bool crossAlignEnd = false}) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: crossAlignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 10,
-            color: AppColors.textMuted,
+            color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
           ),
         ),
+        const SizedBox(height: 2),
         Text(
           value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 12,
             fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : AppColors.textPrimary,
           ),
         ),
       ],
     );
   }
 
+  Widget _buildDetailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required bool isDark,
+    bool isBold = false,
+    Color? iconColor,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: iconColor ?? (isDark ? Colors.white60 : const Color(0xFF64748B)),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10,
+                  color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
+                ),
+              ),
+              const SizedBox(height: 1.5),
+              Text(
+                value,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+                  color: isDark ? Colors.white : AppColors.textPrimary,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSpecBadge(IconData icon, String label, String value, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkBackground : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: isDark ? Colors.white10 : AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: isDark ? Colors.white70 : const Color(0xFF475569)),
+          const SizedBox(width: 5),
+          Text(
+            "$label: ",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 10.5,
+              color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
+            ),
+          ),
+          Text(
+            value,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 10.5,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineTile({
+    required String title,
+    required String subtitle,
+    bool isFirst = false,
+    bool isLast = false,
+    bool isDone = false,
+    bool isActive = false,
+    required bool isDark,
+  }) {
+    return TimelineTile(
+      isFirst: isFirst,
+      isLast: isLast,
+      beforeLineStyle: LineStyle(
+        color: isDone ? const Color(0xFF10B981) : (isDark ? Colors.white12 : Colors.grey.shade300),
+        thickness: 2.5,
+      ),
+      indicatorStyle: IndicatorStyle(
+        width: 22,
+        height: 22,
+        indicator: Container(
+          decoration: BoxDecoration(
+            color: isDone
+                ? const Color(0xFF10B981)
+                : (isActive ? AppColors.secondary : (isDark ? Colors.white24 : Colors.grey.shade300)),
+            shape: BoxShape.circle,
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: AppColors.secondary.withValues(alpha: 0.4),
+                      blurRadius: 6,
+                      spreadRadius: 1,
+                    )
+                  ]
+                : null,
+          ),
+          child: Icon(
+            isDone ? Icons.check_rounded : (isActive ? Icons.autorenew_rounded : Icons.circle),
+            color: Colors.white,
+            size: 13,
+          ),
+        ),
+      ),
+      endChild: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 0, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: isActive || isDone ? FontWeight.bold : FontWeight.w500,
+                fontSize: 12.5,
+                color: isActive
+                    ? AppColors.secondary
+                    : (isDone
+                        ? (isDark ? Colors.white : AppColors.textPrimary)
+                        : (isDark ? Colors.white38 : AppColors.textMuted)),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showPelunasanModal(
       BuildContext context, AppState appState, OrderModel order) {
-    bool isSubmitting = false;
-
+    final isDark = appState.isDarkMode;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -883,14 +1075,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Text(
-                      "Formulir Pelunasan Sisa 50%",
-                      style: GoogleFonts.outfit(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
+                  Text(
+                    "Formulir Pelunasan Sisa 50%",
+                    style: GoogleFonts.outfit(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
                     ),
                   ),
                   IconButton(
@@ -904,7 +1094,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 "Jumlah Pelunasan (50%): Rp ${order.pelunasanAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}",
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.secondary,
+                  color: isDark ? Colors.white : AppColors.primary,
                   fontSize: 13,
                 ),
               ),
@@ -921,35 +1111,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   children: [
                     Icon(Icons.account_balance, color: AppColors.primary),
                     SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        "BCA Corporate: 088-2930-112 (a.n. PT Kopi Industri)",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                    Text("BCA Corporate: 088-2930-112 (a.n. PT Kopi Industri)"),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
               InkWell(
-                onTap: isSubmitting
-                    ? null
-                    : () async {
-                        final result = await FilePickerHelper.showUploadSourceSheet(
-                          context: context,
-                          title: "Unggah Bukti Pelunasan 50%",
-                          subtitle: "Pilih foto struk ATM, screenshot m-Banking, atau dokumen PDF",
-                          isDark: appState.isDarkMode,
-                          brandColor: AppColors.primary,
-                        );
-                        if (result != null) {
-                          setModalState(() {
-                            _pelunasanProofName = result.fileName;
-                            _pelunasanUploadResult = result;
-                          });
-                        }
-                      },
+                onTap: () async {
+                  final name = await FilePickerHelper.pickFileName();
+                  setModalState(() {
+                    _pelunasanProofName =
+                        name ?? 'bukti_pelunasan_50_percent.jpg';
+                  });
+                },
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -975,16 +1149,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             : AppColors.primary,
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _pelunasanProofName ?? "Unggah Bukti Transfer Pelunasan",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
+                      Text(
+                        _pelunasanProofName ?? "Unggah Bukti Transfer Pelunasan",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
                         ),
                       ),
                     ],
@@ -996,279 +1165,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: isSubmitting
-                      ? null
-                      : () async {
-                          if (_pelunasanProofName == null && _pelunasanUploadResult == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Silakan pilih file bukti transfer terlebih dahulu!"),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-
-                          setModalState(() => isSubmitting = true);
-
-                          Uint8List? bytes = _pelunasanUploadResult?.fileBytes;
-                          if (bytes == null && _pelunasanUploadResult?.filePath != null) {
-                            try {
-                              bytes = await File(_pelunasanUploadResult!.filePath!).readAsBytes();
-                            } catch (_) {}
-                          }
-
-                          String proof = _pelunasanProofName ?? 'bukti_pelunasan_50_percent.jpg';
-                          if (bytes != null) {
-                            final name = (_pelunasanUploadResult?.fileName ?? '').toLowerCase();
-                            String mime = 'jpeg';
-                            if (name.endsWith('.png')) {
-                              mime = 'png';
-                            } else if (name.endsWith('.webp')) {
-                              mime = 'webp';
-                            } else if (name.endsWith('.pdf')) {
-                              mime = 'pdf';
-                            }
-
-                            final prefix = mime == 'pdf' ? 'data:application/pdf;base64,' : 'data:image/$mime;base64,';
-                            proof = '$prefix${base64Encode(bytes)}';
-                          }
-
-                          await appState.uploadPelunasanProof(order.id, proof);
-
-                          if (context.mounted) {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Bukti pelunasan terkirim! Status: Menunggu verifikasi & ACC admin."),
-                                backgroundColor: AppColors.success,
-                                duration: Duration(seconds: 4),
-                              ),
-                            );
-                          }
-                        },
+                  onPressed: () {
+                    final proof =
+                        _pelunasanProofName ?? 'bukti_pelunasan_50_percent.jpg';
+                    appState.uploadPelunasanProof(order.id, proof);
+                    Navigator.pop(context);
+                  },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text("KONFIRMASI UPLOAD PELUNASAN"),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showReuploadDpModal(
-      BuildContext context, AppState appState, OrderModel order) {
-    bool isSubmitting = false;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
-          padding: EdgeInsets.fromLTRB(
-              20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      "Unggah Ulang Bukti DP 50%",
-                      style: GoogleFonts.outfit(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
+                    backgroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
+                    foregroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const Divider(),
-              Text(
-                "Jumlah DP (50%): Rp ${order.dpAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}",
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.secondary,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text("Pilih Rekening Tujuan Transfer:"),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.account_balance, color: AppColors.primary),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        "BCA Corporate: 088-2930-112 (a.n. PT Kopi Industri)",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              InkWell(
-                onTap: isSubmitting
-                    ? null
-                    : () async {
-                        final result = await FilePickerHelper.showUploadSourceSheet(
-                          context: context,
-                          title: "Unggah Ulang Bukti DP 50%",
-                          subtitle: "Pilih foto struk ATM, screenshot m-Banking, atau dokumen PDF",
-                          isDark: appState.isDarkMode,
-                          brandColor: AppColors.primary,
-                        );
-                        if (result != null) {
-                          setModalState(() {
-                            _dpProofName = result.fileName;
-                            _dpUploadResult = result;
-                          });
-                        }
-                      },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _dpProofName != null
-                        ? Colors.green.shade50
-                        : AppColors.background,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _dpProofName != null
-                          ? Colors.green
-                          : AppColors.border,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _dpProofName != null
-                            ? Icons.check_circle
-                            : Icons.cloud_upload_outlined,
-                        color: _dpProofName != null
-                            ? Colors.green
-                            : AppColors.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _dpProofName ?? "Unggah Bukti Transfer DP Baru",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: isSubmitting
-                      ? null
-                      : () async {
-                          if (_dpProofName == null && _dpUploadResult == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Silakan pilih file bukti transfer DP terlebih dahulu!"),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-
-                          setModalState(() => isSubmitting = true);
-
-                          Uint8List? bytes = _dpUploadResult?.fileBytes;
-                          if (bytes == null && _dpUploadResult?.filePath != null) {
-                            try {
-                              bytes = await File(_dpUploadResult!.filePath!).readAsBytes();
-                            } catch (_) {}
-                          }
-
-                          String proof = _dpProofName ?? 'bukti_dp_50_percent.jpg';
-                          if (bytes != null) {
-                            final name = (_dpUploadResult?.fileName ?? '').toLowerCase();
-                            String mime = 'jpeg';
-                            if (name.endsWith('.png')) {
-                              mime = 'png';
-                            } else if (name.endsWith('.webp')) {
-                              mime = 'webp';
-                            } else if (name.endsWith('.pdf')) {
-                              mime = 'pdf';
-                            }
-
-                            final prefix = mime == 'pdf' ? 'data:application/pdf;base64,' : 'data:image/$mime;base64,';
-                            proof = '$prefix${base64Encode(bytes)}';
-                          }
-
-                          await appState.reuploadDpProof(order.id, proof);
-
-                          if (context.mounted) {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Bukti DP baru terkirim! Status: Menunggu verifikasi admin."),
-                                backgroundColor: AppColors.success,
-                                duration: Duration(seconds: 4),
-                              ),
-                            );
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text("KONFIRMASI UNGGAH ULANG DP"),
+                  child: const Text("KONFIRMASI UPLOAD PELUNASAN"),
                 ),
               ),
             ],
