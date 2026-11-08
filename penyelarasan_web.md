@@ -72,11 +72,15 @@ Branch aktif pengerjaan: **`fitur/ui-monokrom`**
 ---
 
 ### Tahap 5: Penyelarasan Formulir Custom Order RFQ & WhatsApp Gateway
-- **File Dimodifikasi**: `lib/screens/user/order/rfq_custom_order_screen.dart`
+- **File Dimodifikasi**:
+  1. `lib/screens/user/home/home_screen.dart`
+  2. `lib/screens/user/order/rfq_custom_order_screen.dart`
 - **Poin Perubahan**:
+  - **Home Screen Hero CTA**: Tombol kedua di banner dialihkan menjadi *"Konsultasi Sales"* yang langsung membuka kanal WhatsApp resmi PT MDI (`ContactWhatsappScreen`) untuk tanya-jawab umum pengunjung.
+  - **Alur Kustomisasi Terpadu**: Pemesanan kustomisasi teknis (RFQ) difokuskan murni dari Halaman Detail Mesin sehingga selalu memiliki mesin acuan dasar (`baseProduct` required).
   - **Header Banner Monokrom Industrial**: Menggunakan Zinc 950 (`#09090B`) dengan tipografi `Plus Jakarta Sans`.
-  - **Kartu Mesin Acuan**: Menampilkan thumbnail, pill category (`MD-COFFEE` / `MD-COCOA`), status `Pre-Order 30 Hari`, Kode Model Resmi (`KODE MODEL: MDI-xxx`), dan harga basis. Memperbaiki issue right overflow 24px menggunakan `Wrap`.
-  - **Penyederhanaan Form Masukan**: Menghapus opsi file upload sketsa dan dropdown budget/waktu agar formulir cepat diisi pembeli (< 30 detik) tanpa birokrasi berbelit.
+  - **Kartu Mesin Acuan**: Menampilkan thumbnail, pill category (`MD-COFFEE` / `MD-COCOA`), status `Pre-Order 30 Hari`, Kode Model Resmi (`KODE MODEL: MDI-xxx`), dan harga basis. Bebas issue overflow menggunakan `Wrap`.
+  - **Penyederhanaan Form Masukan**: Menghapus opsi file upload sketsa, dropdown budget/waktu, dan input mesin manual agar formulir cepat diisi pembeli (< 30 detik).
   - **Textarea Modifikasi Lapang**: Input spesifikasi khusus berlatar Zinc 100 dengan border Zinc 200 presisi.
   - **Kontak PIC Pengadaan**: Kolom Nama PIC dan Nomor WhatsApp aktif (otomatis terisi dari profil user jika login).
   - **Generator Nomor Tiket RFQ Otomatis**: Menghasilkan tiket antrean resmi (contoh `RFQ-2026-050`) dan mencatatkannya ke `AppState`.

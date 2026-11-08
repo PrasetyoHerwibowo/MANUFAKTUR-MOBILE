@@ -6,7 +6,7 @@ import '../../../providers/app_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/product_model.dart';
 import '../catalog/product_detail_screen.dart';
-import '../order/rfq_custom_order_screen.dart';
+import '../info/contact_whatsapp_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onNavigateToCatalog;
@@ -345,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         const SizedBox(width: 8),
 
-                        // Button 2: Glassmorphism Outline Pill "Konsultasi RFQ"
+                        // Button 2: Glassmorphism Outline Pill "Konsultasi Sales"
                         Material(
                           color: Colors.transparent,
                           child: InkWell(
@@ -354,7 +354,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                      const RfqCustomOrderScreen(),
+                                      const ContactWhatsappScreen(),
                                 ),
                               );
                             },
@@ -373,20 +373,20 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
+                                  const Icon(
+                                    Icons.chat_bubble_outline_rounded,
+                                    size: 13,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 5),
                                   Text(
-                                    "Konsultasi RFQ",
+                                    "Konsultasi Sales",
                                     style: GoogleFonts.plusJakartaSans(
                                       color: Colors.white,
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: -0.2,
                                     ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  const Icon(
-                                    Icons.arrow_forward_rounded,
-                                    size: 13,
-                                    color: Colors.white,
                                   ),
                                 ],
                               ),

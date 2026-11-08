@@ -7,38 +7,23 @@ import '../../../core/theme/app_colors.dart';
 import '../info/contact_whatsapp_screen.dart';
 
 class RfqCustomOrderScreen extends StatefulWidget {
-  final ProductModel? baseProduct;
+  final ProductModel baseProduct;
 
-  const RfqCustomOrderScreen({super.key, this.baseProduct});
+  const RfqCustomOrderScreen({super.key, required this.baseProduct});
 
   @override
   State<RfqCustomOrderScreen> createState() => _RfqCustomOrderScreenState();
 }
 
 class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
-  late final TextEditingController _machineTypeController;
-  late final TextEditingController _capacityController;
   late final TextEditingController _customFeaturesController;
   late final TextEditingController _picNameController;
   late final TextEditingController _picPhoneController;
 
-  String _selectedElectrical = '380V 3-Phase Industrial (Standar Pabrik)';
-
   @override
   void initState() {
     super.initState();
-    final p = widget.baseProduct;
     final appState = Provider.of<AppState>(context, listen: false);
-
-    if (p != null) {
-      _machineTypeController = TextEditingController(text: '${p.name} (Custom Edition)');
-      _capacityController = TextEditingController(
-        text: p.specifications.kapasitas != '-' ? p.specifications.kapasitas : 'Kapasitas Acuan Seri',
-      );
-    } else {
-      _machineTypeController = TextEditingController();
-      _capacityController = TextEditingController();
-    }
 
     _customFeaturesController = TextEditingController();
     _picNameController = TextEditingController(
@@ -51,8 +36,6 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
 
   @override
   void dispose() {
-    _machineTypeController.dispose();
-    _capacityController.dispose();
     _customFeaturesController.dispose();
     _picNameController.dispose();
     _picPhoneController.dispose();
@@ -68,7 +51,6 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
     final appState = Provider.of<AppState>(context);
     final isDark = appState.isDarkMode;
     final p = widget.baseProduct;
-    final bool hasBaseProduct = p != null;
 
     final cardBg = isDark ? AppColors.darkSurface : Colors.white;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
@@ -77,93 +59,94 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
     final inputFill = isDark ? const Color(0xFF18181B) : const Color(0xFFF4F4F5);
     final brandColor = isDark ? Colors.white : AppColors.primary;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
-      appBar: AppBar(
-        backgroundColor: cardBg,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: textColor, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          hasBaseProduct ? "Kustomisasi Mesin" : "Konsultasi Custom Order (RFQ)",
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 16.5,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.3,
-            color: textColor,
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+        appBar: AppBar(
+          backgroundColor: cardBg,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_rounded, color: textColor, size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            "Kustomisasi Mesin",
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+              color: textColor,
+            ),
+          ),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(color: borderColor, height: 1),
           ),
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: borderColor, height: 1),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. Header Banner Ringkas (Industrial Zinc Monokrom)
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF18181B) : const Color(0xFF09090B),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Header Banner Ringkas (Industrial Zinc Monokrom)
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF18181B) : const Color(0xFF09090B),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
                     ),
-                    child: const Icon(Icons.precision_manufacturing_rounded, color: Colors.white, size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          hasBaseProduct ? "Spesifikasi Kustom Pabrik" : "Request for Quotation (RFQ)",
-                          style: GoogleFonts.plusJakartaSans(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          "Pabrikasi fleksibel sesuai denah workshop, kapasitas produksi, & kebutuhan lini Anda.",
-                          style: GoogleFonts.inter(
-                            color: Colors.white70,
-                            fontSize: 11,
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.precision_manufacturing_rounded, color: Colors.white, size: 22),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Spesifikasi Kustom Pabrik",
+                            style: GoogleFonts.plusJakartaSans(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            "Pabrikasi fleksibel sesuai denah workshop, kapasitas produksi, & kebutuhan lini Anda.",
+                            style: GoogleFonts.inter(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            const SizedBox(height: 14),
+              const SizedBox(height: 14),
 
-            // 2. KARTU MESIN ACUAN (HANYA MUNCUL JIKA DIBUKA DARI DETAIL PRODUK)
-            if (hasBaseProduct) ...[
+              // 2. KARTU MESIN ACUAN DASAR
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -306,12 +289,11 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
-            ],
 
-            // 3. JIKA DIBUKA DARI HOME TANPA MESIN ACUAN: TAMPILKAN INPUT MESIN & KAPASITAS
-            if (!hasBaseProduct) ...[
-              _buildSectionLabel("Target Mesin yang Diinginkan", textColor),
+              const SizedBox(height: 14),
+
+              // 3. RINCIAN MODIFIKASI & KEBUTUHAN KHUSUS
+              _buildSectionLabel("Rincian Permintaan Modifikasi", textColor),
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -323,352 +305,246 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Jenis Mesin / Lini Produksi",
+                      "Deskripsi Kebutuhan Teknis / Modifikasi",
                       style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Jelaskan modifikasi material (SS304/SS316), penambahan PLC/layar sentuh, penyesuaian dimensi, atau kebutuhan khusus lainnya.",
+                      style: GoogleFonts.inter(fontSize: 11, color: subtextColor, height: 1.3),
+                    ),
+                    const SizedBox(height: 8),
                     TextField(
-                      controller: _machineTypeController,
+                      controller: _customFeaturesController,
+                      maxLines: 4,
                       style: GoogleFonts.inter(fontSize: 12.5, color: textColor),
                       decoration: InputDecoration(
-                        hintText: "Contoh: Lini Roasting 15kg / Huller Kopi Industri",
-                        hintStyle: GoogleFonts.inter(fontSize: 12, color: subtextColor),
-                        prefixIcon: Icon(Icons.precision_manufacturing_outlined, size: 18, color: subtextColor),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                        hintText: "Contoh: Mohon penambahan panel otomatisasi PLC touchscreen, material hopper dan drum full Stainless Steel 304, serta opsi warna finishing hitam matte...",
+                        hintStyle: GoogleFonts.inter(fontSize: 11.5, color: subtextColor, height: 1.35),
+                        contentPadding: const EdgeInsets.all(12),
                         filled: true,
                         fillColor: inputFill,
                         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor)),
                         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: brandColor)),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    Text(
-                      "Target Kapasitas Produksi",
-                      style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _capacityController,
-                      style: GoogleFonts.inter(fontSize: 12.5, color: textColor),
-                      decoration: InputDecoration(
-                        hintText: "Contoh: 15 kg/Batch atau 500 kg/Hari",
-                        hintStyle: GoogleFonts.inter(fontSize: 12, color: subtextColor),
-                        prefixIcon: Icon(Icons.speed_outlined, size: 18, color: subtextColor),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                        filled: true,
-                        fillColor: inputFill,
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: brandColor)),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    Text(
-                      "Sumber Daya Listrik Pabrik",
-                      style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
-                    ),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedElectrical,
-                      dropdownColor: cardBg,
-                      style: GoogleFonts.inter(fontSize: 12, color: textColor),
-                      decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.flash_on_outlined, size: 18, color: subtextColor),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                        filled: true,
-                        fillColor: inputFill,
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: brandColor)),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: '380V 3-Phase Industrial (Standar Pabrik)',
-                          child: Text('380V 3-Phase Industrial (Standar Pabrik)', overflow: TextOverflow.ellipsis),
-                        ),
-                        DropdownMenuItem(
-                          value: '220V 1-Phase (Standar Outlet)',
-                          child: Text('220V 1-Phase (Standar Komersial)', overflow: TextOverflow.ellipsis),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Gas LPG / LNG + 220V 1-Phase',
-                          child: Text('Gas LPG / LNG + Listrik 220V', overflow: TextOverflow.ellipsis),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) setState(() => _selectedElectrical = val);
-                      },
                     ),
                   ],
                 ),
               ),
+
               const SizedBox(height: 14),
+
+              // 4. DATA KONTAK PIC PROCUREMENT (PENGADAAN)
+              _buildSectionLabel("Kontak PIC Pengadaan (Procurement)", textColor),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Nama Penanggung Jawab (PIC)",
+                      style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _picNameController,
+                      style: GoogleFonts.inter(fontSize: 12.5, color: textColor),
+                      decoration: InputDecoration(
+                        hintText: "Contoh: Bpk. Bambang Hendrawan",
+                        hintStyle: GoogleFonts.inter(fontSize: 12, color: subtextColor),
+                        prefixIcon: Icon(Icons.person_outline_rounded, size: 18, color: subtextColor),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                        filled: true,
+                        fillColor: inputFill,
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: brandColor)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Text(
+                      "Nomor WhatsApp PIC",
+                      style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _picPhoneController,
+                      keyboardType: TextInputType.phone,
+                      style: GoogleFonts.inter(fontSize: 12.5, color: textColor),
+                      decoration: InputDecoration(
+                        hintText: "Contoh: 0812-3456-7890",
+                        hintStyle: GoogleFonts.inter(fontSize: 12, color: subtextColor),
+                        prefixIcon: Icon(Icons.phone_outlined, size: 18, color: subtextColor),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                        filled: true,
+                        fillColor: inputFill,
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: brandColor)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // 5. BANNER DIRECT WHATSAPP GATEWAY
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF18181B) : const Color(0xFFF4F4F5),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF16A34A).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Penerbitan Tiket RFQ & Diskusi WA",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800,
+                              color: textColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "Setelah form terkirim, nomor tiket resmi akan otomatis dibuat dan Anda dapat langsung mengirim foto sketsa/layout workshop via chat WhatsApp.",
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: subtextColor,
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
             ],
+          ),
+        ),
 
-            // 4. RINCIAN MODIFIKASI & KEBUTUHAN KHUSUS
-            _buildSectionLabel("Rincian Permintaan Modifikasi", textColor),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Deskripsi Kebutuhan Teknis / Modifikasi",
-                    style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Jelaskan modifikasi material (SS304/SS316), penambahan PLC/layar sentuh, penyesuaian dimensi, atau kebutuhan khusus lainnya.",
-                    style: GoogleFonts.inter(fontSize: 11, color: subtextColor, height: 1.3),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _customFeaturesController,
-                    maxLines: 4,
-                    style: GoogleFonts.inter(fontSize: 12.5, color: textColor),
-                    decoration: InputDecoration(
-                      hintText: hasBaseProduct
-                          ? "Contoh: Mohon penambahan panel otomatisasi PLC touchscreen, material hopper dan drum full Stainless Steel 304, serta opsi warna finishing hitam matte..."
-                          : "Contoh: Kebutuhan lini pengolahan kakao kapasitas 250 kg/batch dengan penggerak 3-phase, corong stainless steel food grade, dan sistem pendingin cepat...",
-                      hintStyle: GoogleFonts.inter(fontSize: 11.5, color: subtextColor, height: 1.35),
-                      contentPadding: const EdgeInsets.all(12),
-                      filled: true,
-                      fillColor: inputFill,
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: brandColor)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 14),
-
-            // 5. DATA KONTAK PIC PROCUREMENT (PENGADAAN)
-            _buildSectionLabel("Kontak PIC Pengadaan (Procurement)", textColor),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Nama Penanggung Jawab (PIC)",
-                    style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: _picNameController,
-                    style: GoogleFonts.inter(fontSize: 12.5, color: textColor),
-                    decoration: InputDecoration(
-                      hintText: "Contoh: Bpk. Bambang Hendrawan",
-                      hintStyle: GoogleFonts.inter(fontSize: 12, color: subtextColor),
-                      prefixIcon: Icon(Icons.person_outline_rounded, size: 18, color: subtextColor),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                      filled: true,
-                      fillColor: inputFill,
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: brandColor)),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Text(
-                    "Nomor WhatsApp PIC",
-                    style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: _picPhoneController,
-                    keyboardType: TextInputType.phone,
-                    style: GoogleFonts.inter(fontSize: 12.5, color: textColor),
-                    decoration: InputDecoration(
-                      hintText: "Contoh: 0812-3456-7890",
-                      hintStyle: GoogleFonts.inter(fontSize: 12, color: subtextColor),
-                      prefixIcon: Icon(Icons.phone_outlined, size: 18, color: subtextColor),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                      filled: true,
-                      fillColor: inputFill,
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: brandColor)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 14),
-
-            // 6. BANNER DIRECT WHATSAPP GATEWAY
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF18181B) : const Color(0xFFF4F4F5),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: borderColor),
-              ),
+        // Fixed Bottom Action Bar (Zinc Industrial Monokrom)
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            border: Border(top: BorderSide(color: borderColor, width: 1)),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF16A34A).withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 20),
-                  ),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Penerbitan Tiket RFQ & Diskusi WA",
+                          "Kajian Tim Engineer",
+                          style: GoogleFonts.inter(fontSize: 10, color: subtextColor),
+                        ),
+                        Text(
+                          "1x24 Jam Kerja",
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12.5,
+                            fontSize: 15,
                             fontWeight: FontWeight.w800,
                             color: textColor,
                           ),
                         ),
-                        const SizedBox(height: 2),
                         Text(
-                          "Setelah form terkirim, nomor tiket resmi akan otomatis dibuat dan Anda dapat langsung mengirim foto sketsa/layout workshop via chat WhatsApp.",
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: subtextColor,
-                            height: 1.35,
-                          ),
+                          "Surat Penawaran Resmi & CAD",
+                          style: GoogleFonts.inter(fontSize: 9.5, color: subtextColor),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      final picName = _picNameController.text.trim();
+                      final picPhone = _picPhoneController.text.trim();
 
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-
-      // Fixed Bottom Action Bar (Zinc Industrial Monokrom)
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: cardBg,
-          border: Border(top: BorderSide(color: borderColor, width: 1)),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Kajian Tim Engineer",
-                        style: GoogleFonts.inter(fontSize: 10, color: subtextColor),
-                      ),
-                      Text(
-                        "1x24 Jam Kerja",
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: textColor,
-                        ),
-                      ),
-                      Text(
-                        "Surat Penawaran Resmi & CAD",
-                        style: GoogleFonts.inter(fontSize: 9.5, color: subtextColor),
-                      ),
-                    ],
-                  ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    final picName = _picNameController.text.trim();
-                    final picPhone = _picPhoneController.text.trim();
-
-                    if (picName.isEmpty || picPhone.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: const Color(0xFF09090B),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          content: Text(
-                            "Mohon lengkapi Nama PIC dan Nomor WhatsApp.",
-                            style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+                      if (picName.isEmpty || picPhone.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: const Color(0xFF09090B),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            content: Text(
+                              "Mohon lengkapi Nama PIC dan Nomor WhatsApp.",
+                              style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+                            ),
                           ),
-                        ),
+                        );
+                        return;
+                      }
+
+                      final machine = "${p.name} (Custom Edition)";
+                      final capacity = p.specifications.kapasitas;
+                      final features = _customFeaturesController.text.trim().isEmpty
+                          ? "Penyesuaian spesifikasi standar pabrik (Kustomisasi Pabrikasi)."
+                          : _customFeaturesController.text.trim();
+
+                      appState.submitRFQ(
+                        machineType: machine,
+                        capacity: capacity,
+                        electrical: p.specifications.sumberListrik,
+                        features: features,
+                        budget: "Konsultasi Teknis & Penawaran Resmi",
+                        targetDate: "Sesuai Jadwal Fabrikasi (30 Hari)",
+                        attachment: null,
                       );
-                      return;
-                    }
 
-                    final machine = hasBaseProduct
-                        ? "${p.name} (Custom Edition)"
-                        : (_machineTypeController.text.trim().isEmpty
-                            ? "Custom Industrial Machine"
-                            : _machineTypeController.text.trim());
+                      final ticketNo = appState.customOrders.isNotEmpty
+                          ? appState.customOrders.first.rfqNumber
+                          : "RFQ-${DateTime.now().year}-051";
 
-                    final capacity = hasBaseProduct
-                        ? p.specifications.kapasitas
-                        : (_capacityController.text.trim().isEmpty
-                            ? "Kapasitas Standar Pabrik"
-                            : _capacityController.text.trim());
-
-                    final features = _customFeaturesController.text.trim().isEmpty
-                        ? "Penyesuaian spesifikasi standar pabrik (Kustomisasi Pabrikasi)."
-                        : _customFeaturesController.text.trim();
-
-                    appState.submitRFQ(
-                      machineType: machine,
-                      capacity: capacity,
-                      electrical: hasBaseProduct ? p.specifications.sumberListrik : _selectedElectrical,
-                      features: features,
-                      budget: "Konsultasi Teknis & Penawaran Resmi",
-                      targetDate: "Sesuai Jadwal Fabrikasi (30 Hari)",
-                      attachment: null,
-                    );
-
-                    final ticketNo = appState.customOrders.isNotEmpty
-                        ? appState.customOrders.first.rfqNumber
-                        : "RFQ-${DateTime.now().year}-051";
-
-                    _showSuccessRfqDialog(context, machine, ticketNo, picName, isDark);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDark ? Colors.white : const Color(0xFF09090B),
-                    foregroundColor: isDark ? const Color(0xFF09090B) : Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                    elevation: 0,
-                  ),
-                  icon: Icon(
-                    Icons.chat_bubble_rounded,
-                    size: 16,
-                    color: isDark ? const Color(0xFF09090B) : Colors.white,
-                  ),
-                  label: Text(
-                    "Kirim & Diskusi WA",
-                    style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12.5,
-                      letterSpacing: -0.2,
+                      _showSuccessRfqDialog(context, machine, ticketNo, picName, isDark);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark ? Colors.white : const Color(0xFF09090B),
+                      foregroundColor: isDark ? const Color(0xFF09090B) : Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                      elevation: 0,
+                    ),
+                    icon: Icon(
+                      Icons.chat_bubble_rounded,
+                      size: 16,
+                      color: isDark ? const Color(0xFF09090B) : Colors.white,
+                    ),
+                    label: Text(
+                      "Kirim & Diskusi WA",
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12.5,
+                        letterSpacing: -0.2,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -835,7 +711,7 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
                     Navigator.pop(context); // Back to previous screen
                   },
                   child: Text(
-                    "Kembali ke Katalog Mesin",
+                    "Kembali ke Detail Mesin",
                     style: GoogleFonts.inter(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
