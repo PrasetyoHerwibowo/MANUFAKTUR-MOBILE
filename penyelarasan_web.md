@@ -36,7 +36,7 @@ Branch aktif pengerjaan: **`fitur/ui-monokrom`**
 | **Tahap 3.2**| Home: Series Navigation Tabs & Search Bar | ✅ Selesai | `49074d8` | Tab monokrom pill (Semua Lini, MD-Coffee, MD-Cocoa) & Search bar pill 999px |
 | **Tahap 3.3**| Home: Industrial Machine Card & Clean Layout | ✅ Selesai | `49074d8` | Kode model MDI-xxx, badge lini, rasio 0.58, tombol bulat monokrom, hapus banner ganda |
 | **Tahap 4** | Penyelarasan Halaman Detail Produk | ✅ Selesai | `44cd378` | Kode model, Kotak Fungsi Mesin, Tabel Spek, Brosur SOP PDF, Video Demo, Pill CTA |
-| **Tahap 5** | Halaman Custom Order RFQ | ⏳ Siap Dikerjakan | - | Engineering Helpdesk WA, Dynamic Specs, & Auto-Ticket |
+| **Tahap 5** | Halaman Custom Order RFQ & WhatsApp Gateway | ✅ Selesai | - | Form ringkas 30 detik, Kontak PIC, Auto-Ticket RFQ, Dialog WhatsApp Helpdesk |
 
 ---
 
@@ -59,17 +59,29 @@ Branch aktif pengerjaan: **`fitur/ui-monokrom`**
 
 ---
 
-### Tahap 2: Standardisasi Kode Model & Fungsi Mesin
-- **File Dimodifikasi**:
-  1. `lib/core/models/product_model.dart`
-  2. `lib/core/constants/mock_data.dart`
+### Tahap 4: Penyelarasan Halaman Detail Produk & Modal Media
+- **File Dimodifikasi**: `lib/screens/user/product/product_detail_screen.dart`
 - **Poin Perubahan**:
-  - Menambahkan field `modelCode` dan `function` di `ProductModel` beserta getter helper `modelCodeDisplay` dan `functionPreview`.
-  - Menyelaraskan seluruh 10 produk mesin mock data dengan kode pabrik resmi website:
-    - Roaster: `MDI-RS01`, `MDI-RS04`, `MDI-RS50`, `MDI-RS80`
-    - Pasca-Panen Kopi: `MDI-PL200`, `MDI-HL150`, `MDI-ESP03`
-    - Pengolahan Kakao: `MDI-FM500`, `MDI-DR1000`, `MDI-GR30`
-- **Commit**: `[fitur/ui-monokrom ab02853] feat: standardisasi model dan fungsi mesin web`
+  - Menampilkan Kode Model resmi (`MDI-RS50`, dll) dan menghapus star rating/review count (sesuai karakteristik mesin B2B).
+  - Menghapus badge "SS304 Food Grade" yang berulang pada row garansi.
+  - Memperbarui status ketersediaan menjadi "Pre-Order 30 Hari".
+  - Menambahkan kartu "FUNGSI MESIN" dengan gaya industrial web.
+  - Mengonversi tabel spesifikasi teknis menjadi format monokrom berselang-seling yang rapi.
+  - Menyelaraskan modal "Brosur PDF (Manual Book)" dan "Video Demo" menjadi modal profesional tanpa box merah.
+
+---
+
+### Tahap 5: Penyelarasan Formulir Custom Order RFQ & WhatsApp Gateway
+- **File Dimodifikasi**: `lib/screens/user/order/rfq_custom_order_screen.dart`
+- **Poin Perubahan**:
+  - **Header Banner Monokrom Industrial**: Menggunakan Zinc 950 (`#09090B`) dengan tipografi `Plus Jakarta Sans`.
+  - **Kartu Mesin Acuan**: Menampilkan thumbnail, pill category (`MD-COFFEE` / `MD-COCOA`), status `Pre-Order 30 Hari`, Kode Model Resmi (`KODE MODEL: MDI-xxx`), dan harga basis. Memperbaiki issue right overflow 24px menggunakan `Wrap`.
+  - **Penyederhanaan Form Masukan**: Menghapus opsi file upload sketsa dan dropdown budget/waktu agar formulir cepat diisi pembeli (< 30 detik) tanpa birokrasi berbelit.
+  - **Textarea Modifikasi Lapang**: Input spesifikasi khusus berlatar Zinc 100 dengan border Zinc 200 presisi.
+  - **Kontak PIC Pengadaan**: Kolom Nama PIC dan Nomor WhatsApp aktif (otomatis terisi dari profil user jika login).
+  - **Generator Nomor Tiket RFQ Otomatis**: Menghasilkan tiket antrean resmi (contoh `RFQ-2026-050`) dan mencatatkannya ke `AppState`.
+  - **Bottom Action Bar Inverted Zinc Pill**: Tombol kapsul `999px` bertuliskan *"Kirim & Diskusi WA"*.
+  - **Modal Tiket Sukses & WhatsApp Gateway**: Dialog sukses berdesain monokrom yang menampilkan badge nomor tiket resmi, ringkasan penugasan tim engineer, dan tombol hijau kapsul *"Buka WhatsApp Engineer Sekarang"* yang mengarahkan pembeli langsung ke chat WhatsApp helpdesk PT MDI.
 
 ---
 
