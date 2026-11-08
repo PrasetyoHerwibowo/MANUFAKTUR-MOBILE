@@ -7,7 +7,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/models/product_model.dart';
 import '../catalog/product_detail_screen.dart';
 import '../order/rfq_custom_order_screen.dart';
-import '../info/contact_whatsapp_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onNavigateToCatalog;
@@ -25,17 +24,17 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Map<String, dynamic>> _commodities = [
     {
       'id': 'Semua',
-      'title': 'Semua Mesin',
+      'title': 'Semua Lini',
       'icon': Icons.apps_rounded,
     },
     {
       'id': 'Kopi',
-      'title': 'Mesin Kopi',
+      'title': 'MD-Coffee Series',
       'icon': Icons.coffee_rounded,
     },
     {
       'id': 'Kakao',
-      'title': 'Mesin Kakao',
+      'title': 'MD-Cocoa Series',
       'icon': Icons.spa_rounded,
     },
   ];
@@ -102,18 +101,13 @@ class _HomeScreenState extends State<HomeScreen> {
           else
             _buildProductGrid(context, appState, isDark, filteredProducts),
 
-          const SizedBox(height: 20),
-
-          // 6. WhatsApp Engineering Consultation Banner (Soft Mint Tone)
-          _buildConsultationBanner(context, isDark),
-
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
         ],
       ),
     );
   }
 
-  // ================= 1. COMMODITY SELECTOR (3 KATEGORI UTAMA) =================
+  // ================= 2. SERIES NAVIGATION TABS (ZINC MONOCHROME PILLS) =================
   Widget _buildCategorySelector(AppState appState, bool isDark) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -124,26 +118,12 @@ class _HomeScreenState extends State<HomeScreen> {
           final id = item['id']?.toString() ?? 'Semua';
           final label = item['title'].toString();
           final isSelected = appState.selectedCommodity == item['id'];
-          final isCoffee = id == 'Kopi';
-          final isCocoa = id == 'Kakao';
 
-          Color activeBg;
-          Color activeBorder;
-          Color activeColor;
-
-          if (isCoffee) {
-            activeBg = isDark ? const Color(0xFF382314) : const Color(0xFFFEF3C7);
-            activeBorder = AppColors.brandCoffee;
-            activeColor = AppColors.brandCoffee;
-          } else if (isCocoa) {
-            activeBg = isDark ? const Color(0xFF2C1608) : const Color(0xFFFFEDD5);
-            activeBorder = AppColors.brandCocoa;
-            activeColor = AppColors.brandCocoa;
-          } else {
-            activeBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
-            activeBorder = AppColors.secondary;
-            activeColor = AppColors.secondary;
-          }
+          final Color activeBg = isDark ? Colors.white : AppColors.primary; // Zinc 950
+          final Color activeTextColor = isDark ? AppColors.primary : Colors.white;
+          final Color inactiveBg = isDark ? AppColors.darkSurface : AppColors.surfaceVariant; // Zinc 100
+          final Color inactiveBorder = isDark ? AppColors.darkBorder : AppColors.border; // Zinc 200
+          final Color inactiveTextColor = isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
 
           return Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -154,61 +134,44 @@ class _HomeScreenState extends State<HomeScreen> {
                   appState.setCommodityFilter(id);
                   appState.setProcessStageFilter('Semua');
                 },
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(999), // Web Pill Shape
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   curve: Curves.easeInOut,
-                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 16),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? activeBg
-                        : (isDark ? const Color(0xFF141C28) : Colors.white),
-                    borderRadius: BorderRadius.circular(12),
+                    color: isSelected ? activeBg : inactiveBg,
+                    borderRadius: BorderRadius.circular(999), // Web Pill Shape
                     border: Border.all(
-                      color: isSelected
-                          ? activeBorder
-                          : (isDark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : const Color(0xFFE2E8F0)),
-                      width: isSelected ? 1.5 : 1,
+                      color: isSelected ? activeBg : inactiveBorder,
+                      width: 1.2,
                     ),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: activeBorder.withValues(alpha: 0.22),
-                              blurRadius: 6,
+                              color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.15),
+                              blurRadius: 8,
                               offset: const Offset(0, 2),
                             )
                           ]
-                        : [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.03),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
+                        : null,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         (item['icon'] as IconData?) ?? Icons.category_rounded,
-                        size: 18,
-                        color: isSelected
-                            ? activeColor
-                            : (isDark ? Colors.white70 : AppColors.textSecondary),
+                        size: 16,
+                        color: isSelected ? activeTextColor : inactiveTextColor,
                       ),
-                      const SizedBox(width: 7),
+                      const SizedBox(width: 8),
                       Text(
                         label,
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11.5,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                          color: isSelected
-                              ? activeColor
-                              : (isDark
-                                  ? AppColors.darkTextSecondary
-                                  : AppColors.textSecondary),
+                          fontSize: 12,
+                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                          letterSpacing: -0.2,
+                          color: isSelected ? activeTextColor : inactiveTextColor,
                         ),
                       ),
                     ],
@@ -450,9 +413,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (appState.searchQuery.isNotEmpty) {
       headerTitle = 'Pencarian: "${appState.searchQuery}"';
     } else if (appState.selectedCommodity == 'Kopi') {
-      headerTitle = "Katalog Mesin Kopi";
+      headerTitle = "Katalog MD-Coffee Series";
     } else if (appState.selectedCommodity == 'Kakao') {
-      headerTitle = "Katalog Mesin Kakao";
+      headerTitle = "Katalog MD-Cocoa Series";
     }
 
     return Padding(
@@ -464,18 +427,30 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Text(
             headerTitle,
-            style: GoogleFonts.outfit(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : const Color(0xFF0F172A),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 15.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+              color: isDark ? Colors.white : AppColors.textPrimary,
             ),
           ),
-          Text(
-            "$count Produk",
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: isDark ? AppColors.darkBorder : AppColors.border,
+                width: 0.8,
+              ),
+            ),
+            child: Text(
+              "$count Mesin",
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+              ),
             ),
           ),
         ],
@@ -496,7 +471,7 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisCount: 2,
           crossAxisSpacing: 12,
           mainAxisSpacing: 14,
-          childAspectRatio: 0.65,
+          childAspectRatio: 0.58, // Optimized for Model Code + Title + Specs + Price
         ),
         itemBuilder: (context, index) {
           final product = products[index];
@@ -515,14 +490,14 @@ class _HomeScreenState extends State<HomeScreen> {
         color: isDark ? AppColors.darkCardBg : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white10 : AppColors.border,
+          color: isDark ? AppColors.darkBorder : AppColors.border,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
             blurRadius: 8,
-            offset: const Offset(0, 3),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -539,46 +514,87 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Clean Machine Image (No cluttering micro-badge!)
+            // Machine Image with Floating Series Badge (Exact Web Aligned)
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-              child: AspectRatio(
-                aspectRatio: 1.25,
-                child: Image.network(
-                  product.imageUrl,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
-                      child: const Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.secondary,
+              child: Stack(
+                children: [
+                  AspectRatio(
+                    aspectRatio: 1.25,
+                    child: Image.network(
+                      product.imageUrl,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: isDark ? AppColors.darkSurface : AppColors.surfaceVariant,
+                          child: const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: isDark ? AppColors.darkSurface : AppColors.surfaceVariant,
+                        child: Center(
+                          child: Icon(
+                            isCoffee ? Icons.coffee_rounded : Icons.spa_rounded,
+                            color: AppColors.textMuted,
+                            size: 32,
                           ),
                         ),
                       ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
-                    child: Center(
-                      child: Icon(
-                        isCoffee ? Icons.coffee_rounded : Icons.spa_rounded,
-                        color: isCoffee ? AppColors.brandCoffee : AppColors.brandCocoa,
-                        size: 34,
+                    ),
+                  ),
+
+                  // Floating Category Pill Badge
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF18181B).withValues(alpha: 0.90)
+                            : Colors.white.withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.15)
+                              : AppColors.border,
+                          width: 0.8,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        isCoffee ? 'Kopi' : 'Kakao',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
             ),
 
-            // Card Body Content (Clean & Focused)
+            // Card Body Content
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(10),
@@ -589,14 +605,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Machine Name
+                        // Official Web Model Code (.card-model)
+                        Text(
+                          product.modelCodeDisplay,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+
+                        // Machine Name (.card-title)
                         Text(
                           product.name,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.outfit(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
                             height: 1.25,
                             color: isDark ? Colors.white : AppColors.textPrimary,
                           ),
@@ -604,134 +634,104 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 6),
 
                         // Capacity / Multi-Model Indicator
-                        if (hasMultipleModels)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.brandCoffeeDark.withValues(alpha: 0.4)
-                                  : const Color(0xFFFEF3C7),
-                              borderRadius: BorderRadius.circular(5),
-                              border: Border.all(
-                                color: isDark
-                                    ? AppColors.brandCoffee.withValues(alpha: 0.3)
-                                    : const Color(0xFFFDE68A),
-                                width: 0.6,
+                        Row(
+                          children: [
+                            Icon(
+                              hasMultipleModels ? Icons.layers_rounded : Icons.scale_rounded,
+                              size: 11,
+                              color: AppColors.textMuted,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                hasMultipleModels
+                                    ? "${product.capacityModels.length} Model Kapasitas"
+                                    : product.specifications.kapasitas,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.textSecondary,
+                                ),
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.layers_rounded,
-                                  size: 10,
-                                  color: AppColors.brandCoffee,
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    "${product.capacityModels.length} Model Kapasitas",
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w700,
-                                      color: isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        else
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppColors.darkSurface
-                                  : const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(5),
-                              border: Border.all(
-                                color: isDark ? Colors.white10 : AppColors.border,
-                                width: 0.6,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.speed_rounded,
-                                  size: 10,
-                                  color: isDark ? Colors.white60 : AppColors.textMuted,
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    product.specifications.kapasitas,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          ],
+                        ),
                       ],
                     ),
 
-                    // Price & Action Button Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                hasMultipleModels ? "Mulai dari" : "Harga PO",
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
-                                ),
-                              ),
-                              Text(
-                                _formatPrice(hasMultipleModels
-                                    ? product.capacityModels.first.price
-                                    : product.price),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.outfit(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white : AppColors.primary,
-                                ),
-                              ),
-                            ],
+                    // Price & Action Button Row with Hairline Top Border
+                    Container(
+                      padding: const EdgeInsets.only(top: 8),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : AppColors.border.withValues(alpha: 0.6),
+                            width: 0.8,
                           ),
                         ),
-                        Container(
-                          width: 26,
-                          height: 26,
-                          decoration: BoxDecoration(
-                            color: isCoffee
-                                ? AppColors.brandCoffee
-                                : AppColors.secondary,
-                            borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  hasMultipleModels ? "Mulai dari" : "Harga Pre-Order",
+                                  style: GoogleFonts.inter(
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                                Text(
+                                  _formatPrice(hasMultipleModels
+                                      ? product.capacityModels.first.price
+                                      : product.price),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.2,
+                                    color: isDark ? Colors.white : AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 14,
-                            color: Colors.white,
+                          Container(
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white : AppColors.primary,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (isDark ? Colors.white : Colors.black)
+                                      .withValues(alpha: 0.15),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 13,
+                              color: isDark ? AppColors.primary : Colors.white,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -752,7 +752,7 @@ class _HomeScreenState extends State<HomeScreen> {
         color: isDark ? AppColors.darkCardBg : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white10 : AppColors.border,
+          color: isDark ? AppColors.darkBorder : AppColors.border,
         ),
       ),
       child: Center(
@@ -766,9 +766,10 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 10),
             Text(
               "Tidak Ada Mesin yang Cocok",
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 15,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
                 color: isDark ? Colors.white : AppColors.textPrimary,
               ),
             ),
@@ -776,7 +777,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(
               "Coba ubah kata kunci pencarian atau sesuaikan filter kategori.",
               textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
+              style: GoogleFonts.inter(
                 fontSize: 11,
                 color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
               ),
@@ -787,90 +788,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 appState.resetFilters();
               },
               icon: const Icon(Icons.refresh_rounded, size: 16),
-              label: const Text("Reset Filter & Tampilkan Semua", style: TextStyle(fontSize: 12)),
+              label: Text(
+                "Reset Filter & Tampilkan Semua",
+                style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700),
+              ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.secondary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                backgroundColor: isDark ? Colors.white : AppColors.primary,
+                foregroundColor: isDark ? AppColors.primary : Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(999),
                 ),
+                elevation: 0,
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ================= 6. CONSULTATION BANNER =================
-  Widget _buildConsultationBanner(BuildContext context, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xFF064E3B).withValues(alpha: 0.25)
-              : const Color(0xFFF0FDF4),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark ? const Color(0xFF059669) : const Color(0xFF86EFAC),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFF25D366).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.chat_bubble_outline_rounded,
-                color: Color(0xFF059669),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Konsultasi Engineer Pabrik",
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF065F46),
-                    ),
-                  ),
-                  Text(
-                    "Tanya spesifikasi, skema listrik & layout bar gratis.",
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10.5,
-                      color: isDark ? const Color(0xFFA7F3D0) : const Color(0xFF047857),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: const Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: Color(0xFF059669),
-                size: 14,
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ContactWhatsappScreen(),
-                  ),
-                );
-              },
             ),
           ],
         ),
