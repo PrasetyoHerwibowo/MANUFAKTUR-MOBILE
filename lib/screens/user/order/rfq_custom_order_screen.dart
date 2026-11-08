@@ -95,18 +95,6 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
             color: textColor,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFF16A34A), size: 20),
-            tooltip: "Chat WhatsApp Engineer",
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ContactWhatsappScreen()),
-              );
-            },
-          ),
-        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(color: borderColor, height: 1),
