@@ -323,7 +323,7 @@ class _UserMainLayoutState extends State<UserMainLayout> {
       // Clean header for secondary tabs
       final titles = [
         "Beranda",
-        "Pesanan Saya",
+        "Pesanan Saya (Tracking & PO)",
         "Layanan Servis & Garansi",
         "Profil Perusahaan",
       ];
@@ -334,10 +334,10 @@ class _UserMainLayoutState extends State<UserMainLayout> {
         scrolledUnderElevation: 0,
         title: Text(
           titles[appState.userTabIndex],
-          style: GoogleFonts.outfit(
-            fontSize: 17,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 16.5,
             fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : AppColors.textPrimary,
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
           ),
         ),
         actions: [

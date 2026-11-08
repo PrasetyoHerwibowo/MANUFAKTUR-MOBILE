@@ -24,37 +24,39 @@ class PdfPreviewModal extends StatelessWidget {
     final isDark = appState.isDarkMode;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
       child: Container(
         width: double.infinity,
-        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 680),
+        constraints: const BoxConstraints(maxWidth: 520, maxHeight: 620),
         child: Column(
           children: [
             // Modal Header
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E293B) : AppColors.primary,
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 22),
-                  const SizedBox(width: 12),
+                  const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.outfit(
                             color: Colors.white,
-                            fontSize: 15,
+                            fontSize: 13.5,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -64,14 +66,16 @@ class PdfPreviewModal extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(
                             color: Colors.white70,
-                            fontSize: 11.5,
+                            fontSize: 10.5,
                           ),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+                    icon: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -116,24 +120,24 @@ class PdfPreviewModal extends StatelessWidget {
                                   Text(
                                     "PT MANUFACTUR DYNAMIC INDONESIA",
                                     style: GoogleFonts.outfit(
-                                      fontSize: 12.5,
+                                      fontSize: 10.5,
                                       fontWeight: FontWeight.bold,
-                                      color: isDark ? Colors.white : AppColors.primary,
-                                      letterSpacing: 0.4,
+                                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                      letterSpacing: 0.3,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     "Fabrikasi Mesin Industri Pengolahan Kopi & Kakao",
                                     style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 9.5,
+                                      fontSize: 8,
                                       color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
                                     ),
                                   ),
                                   Text(
                                     "Hotline Teknis: +62 812-3456-7890 • www.manufacturdynamic.com",
                                     style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 8.5,
+                                      fontSize: 7.5,
                                       color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
                                     ),
                                   ),
@@ -142,26 +146,26 @@ class PdfPreviewModal extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                               decoration: BoxDecoration(
                                 color: pdfType == 'MANUAL_BOOK'
                                     ? const Color(0xFFDC2626).withValues(alpha: isDark ? 0.25 : 0.1)
-                                    : AppColors.secondary.withValues(alpha: isDark ? 0.25 : 0.15),
+                                    : (isDark ? Colors.white10 : const Color(0xFFF1F5F9)),
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
                                   color: pdfType == 'MANUAL_BOOK'
                                       ? const Color(0xFFDC2626).withValues(alpha: 0.4)
-                                      : AppColors.secondary.withValues(alpha: 0.4),
+                                      : (isDark ? Colors.white24 : const Color(0xFFCBD5E1)),
                                 ),
                               ),
                               child: Text(
                                 pdfType == 'MANUAL_BOOK' ? "MANUAL SOP" : pdfType,
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 10,
+                                  fontSize: 8.5,
                                   fontWeight: FontWeight.bold,
                                   color: pdfType == 'MANUAL_BOOK'
                                       ? const Color(0xFFEF4444)
-                                      : AppColors.secondary,
+                                      : (isDark ? Colors.white70 : const Color(0xFF0F172A)),
                                 ),
                               ),
                             ),
@@ -271,41 +275,50 @@ class PdfPreviewModal extends StatelessWidget {
     final total = data?['total'] ?? 'Rp 290.000.000';
     final dp = data?['dp'] ?? 'Rp 145.000.000';
     final pelunasan = data?['pelunasan'] ?? 'Rp 145.000.000';
+    final blackColor = isDark ? Colors.white : const Color(0xFF0F172A);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "DITERBITKAN UNTUK:",
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? AppColors.darkTextSecondary : Colors.grey,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "DITERBITKAN UNTUK:",
+                    style: TextStyle(
+                      fontSize: 7.5,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.3,
+                      color: isDark ? AppColors.darkTextSecondary : Colors.grey.shade700,
+                    ),
                   ),
-                ),
-                Text(
-                  company,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
+                  const SizedBox(height: 1.5),
+                  Text(
+                    company,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 9.5,
+                      color: blackColor,
+                    ),
                   ),
-                ),
-                Text(
-                  "NPWP: 01.234.567.8-012.000",
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isDark ? AppColors.darkTextSecondary : Colors.grey,
+                  Text(
+                    "NPWP: 01.234.567.8-012.000",
+                    style: TextStyle(
+                      fontSize: 7.5,
+                      color: isDark ? AppColors.darkTextSecondary : Colors.grey.shade600,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -313,30 +326,30 @@ class PdfPreviewModal extends StatelessWidget {
                   "NO: INV/$poNumber",
                   style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
+                    fontSize: 8.5,
+                    color: blackColor,
                   ),
                 ),
                 Text(
                   "Tanggal: 06 Okt 2026",
                   style: TextStyle(
-                    fontSize: 11,
-                    color: isDark ? AppColors.darkTextSecondary : Colors.grey,
+                    fontSize: 7.5,
+                    color: isDark ? AppColors.darkTextSecondary : Colors.grey.shade600,
                   ),
                 ),
               ],
             )
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         Table(
           border: TableBorder.all(
             color: isDark ? Colors.white12 : Colors.grey.shade300,
           ),
           columnWidths: const {
-            0: FlexColumnWidth(3),
-            1: FlexColumnWidth(1),
-            2: FlexColumnWidth(2),
+            0: FlexColumnWidth(3.2),
+            1: FlexColumnWidth(0.8),
+            2: FlexColumnWidth(2.2),
           },
           children: [
             TableRow(
@@ -345,34 +358,36 @@ class PdfPreviewModal extends StatelessWidget {
               ),
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
                   child: Text(
                     "Item Mesin",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 11,
+                      fontSize: 8.5,
                       color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 5),
                   child: Text(
                     "Qty",
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 11,
+                      fontSize: 8.5,
                       color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
                   child: Text(
                     "Total Harga",
+                    textAlign: TextAlign.right,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 11,
+                      fontSize: 8.5,
                       color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
@@ -382,31 +397,34 @@ class PdfPreviewModal extends StatelessWidget {
             TableRow(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
                   child: Text(
                     data?['productName'] ?? "Mesin Fabrikasi PT MDI",
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 8.5,
                       color: isDark ? Colors.white70 : Colors.black87,
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 5),
                   child: Text(
                     "1",
+                    textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 8.5,
                       color: isDark ? Colors.white70 : Colors.black87,
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
                   child: Text(
                     total,
+                    textAlign: TextAlign.right,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w600,
                       color: isDark ? Colors.white70 : Colors.black87,
                     ),
                   ),
@@ -415,43 +433,53 @@ class PdfPreviewModal extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         Align(
           alignment: Alignment.centerRight,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                "Pembayaran DP 50%: $dp (LUNAS)",
-                style: const TextStyle(
-                  color: AppColors.success,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  "Pembayaran DP 50%: $dp (LUNAS)",
+                  style: TextStyle(
+                    color: blackColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 8.5,
+                  ),
                 ),
               ),
-              Text(
-                "Sisa Pelunasan 50%: $pelunasan",
-                style: const TextStyle(
-                  color: AppColors.warning,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
+              const SizedBox(height: 2),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  "Sisa Pelunasan 50%: $pelunasan",
+                  style: TextStyle(
+                    color: blackColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 8.5,
+                  ),
                 ),
               ),
-              Divider(color: isDark ? Colors.white12 : Colors.grey.shade300),
-              Text(
-                "TOTAL TAGIHAN: $total",
-                style: GoogleFonts.outfit(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? const Color(0xFF60A5FA) : AppColors.primary,
+              Divider(height: 10, color: isDark ? Colors.white12 : Colors.grey.shade300),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  "TOTAL TAGIHAN: $total",
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: blackColor,
+                  ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(7),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF131A26) : Colors.grey.shade50,
             borderRadius: BorderRadius.circular(6),
@@ -461,14 +489,14 @@ class PdfPreviewModal extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.verified_user_rounded, color: Colors.green, size: 16),
-              const SizedBox(width: 8),
+              const Icon(Icons.verified_user_rounded, color: Colors.green, size: 13),
+              const SizedBox(width: 5),
               Expanded(
                 child: Text(
                   "Dokumen Pre-Order Sah. Termin pelunasan diselesaikan setelah uji fungsi pabrik.",
                   style: TextStyle(
-                    fontSize: 10,
-                    color: isDark ? AppColors.darkTextSecondary : Colors.grey,
+                    fontSize: 7.5,
+                    color: isDark ? AppColors.darkTextSecondary : Colors.grey.shade600,
                   ),
                 ),
               ),
