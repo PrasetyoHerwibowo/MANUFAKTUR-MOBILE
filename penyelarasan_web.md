@@ -37,7 +37,8 @@ Branch aktif pengerjaan: **`fitur/ui-monokrom`**
 | **Tahap 3.3**| Home: Industrial Machine Card & Clean Layout | ✅ Selesai | `49074d8` | Kode model MDI-xxx, badge lini, rasio 0.58, tombol bulat monokrom, hapus banner ganda |
 | **Tahap 4** | Penyelarasan Halaman Detail Produk | ✅ Selesai | `44cd378` | Kode model, Kotak Fungsi Mesin, Tabel Spek, Brosur SOP PDF, Video Demo, Pill CTA |
 | **Tahap 5** | Halaman Custom Order RFQ & WhatsApp Gateway | ✅ Selesai | `ff11fe0` | Form ringkas 30 detik, Kontak PIC, Auto-Ticket RFQ, Dialog WhatsApp Helpdesk |
-| **Tahap 6** | Halaman Kontak WhatsApp & Dialog Monokrom | ✅ Selesai | - | Desain Industrial Monokrom, hapus hijau norak, Inverted Zinc Pill, banner tiket |
+| **Tahap 6** | Halaman Kontak WhatsApp & Dialog Monokrom | ✅ Selesai | `77e23e2` | Desain Industrial Monokrom, hapus hijau norak, Inverted Zinc Pill, banner tiket |
+| **Tahap 7** | Formulir PO Standar & Standardisasi Data PIC | ✅ Selesai | - | Monokrom Zinc, Nama & WA PIC, Alamat Workshop, Inverted Zinc Pill, dialog PO |
 
 ---
 
@@ -101,6 +102,21 @@ Branch aktif pengerjaan: **`fitur/ui-monokrom`**
   - **2 Kartu Kontak Resmi**: Kartu Sales Engineering & Kartu Helpdesk Teknisi dengan tombol kapsul Inverted Zinc `999px`.
   - **Kartu Workshop & Pabrik Cikarang**: Info lokasi dan jam operasional pabrik yang rapi dengan tipografi monokrom bersih tanpa teks oranye.
   - **Dialog Tiket Monokrom**: Ikon centang dan tombol *"Buka WhatsApp Engineer Sekarang"* di dialog RFQ diselaraskan menjadi Inverted Zinc Pill monokrom tanpa warna hijau yang bertabrakan.
+
+---
+
+### Tahap 7: Penyelarasan Formulir Pemesanan Standar PO & Standardisasi Data Identitas PIC
+- **File Dimodifikasi**:
+  1. `lib/screens/user/order/po_form_screen.dart`
+  2. `lib/screens/user/order/rfq_custom_order_screen.dart`
+- **Poin Perubahan**:
+  - **Standardisasi Identitas Pemesan**: Menyelaraskan kedua form pemesanan dengan field terpadu: Nama Lengkap PIC (auto-prefill profil), Nomor WhatsApp PIC (koordinasi ekspedisi), dan Alamat Lengkap Pengiriman Pabrik / Workshop.
+  - **Formulir PO Bebas Catatan Kustom**: Menggantikan kolom ukir logo kustom dengan *"Catatan Tambahan untuk Admin (Opsional)"* khusus instruksi pengiriman.
+  - **Pilihan Rekening Bank Monokrom**: Menghapus warna amber/oranye pada pilihan bank BCA & Mandiri, menggunakan tipografi *Plus Jakarta Sans* bold hitam tegas, dan tombol salin kapsul minimalis.
+  - **Upload Bukti Transfer DP 50%**: Kotak unggah berlatar Zinc 100 dengan *hairline border* Zinc 200 dan tombol ganti/lihat bukti monokrom.
+  - **Bottom Action Bar Inverted Zinc Pill**: Tombol utama *"Kirim Pesanan (PO)"* kapsul `999px` berlatar Zinc 950 `#09090B`.
+  - **Dialog Sukses PO Monokrom**: Ikon centang terverifikasi industrial Zinc 950 dan tombol kapsul Inverted Zinc yang langsung mengarahkan user ke Tab Pesanan.
+  - **Tambahan Lokasi Workshop di RFQ Custom**: Menambahkan kolom *"Kota / Lokasi Workshop (Instalasi Mesin)"* pada form kustomisasi RFQ untuk kelengkapan identitas di dashboard admin.
 
 ---
 

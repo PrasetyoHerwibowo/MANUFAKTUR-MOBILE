@@ -19,6 +19,7 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
   late final TextEditingController _customFeaturesController;
   late final TextEditingController _picNameController;
   late final TextEditingController _picPhoneController;
+  late final TextEditingController _picAddressController;
 
   @override
   void initState() {
@@ -32,6 +33,7 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
     _picPhoneController = TextEditingController(
       text: appState.userPhone.isNotEmpty ? appState.userPhone : '',
     );
+    _picAddressController = TextEditingController();
   }
 
   @override
@@ -39,6 +41,7 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
     _customFeaturesController.dispose();
     _picNameController.dispose();
     _picPhoneController.dispose();
+    _picAddressController.dispose();
     super.dispose();
   }
 
@@ -387,6 +390,27 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
                         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: brandColor)),
                       ),
                     ),
+                    const SizedBox(height: 12),
+
+                    Text(
+                      "Kota / Lokasi Workshop (Instalasi Mesin)",
+                      style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: textColor),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _picAddressController,
+                      style: GoogleFonts.inter(fontSize: 12.5, color: textColor),
+                      decoration: InputDecoration(
+                        hintText: "Contoh: Kawasan Industri Kendal, Jateng atau Kintamani, Bali",
+                        hintStyle: GoogleFonts.inter(fontSize: 12, color: subtextColor),
+                        prefixIcon: Icon(Icons.location_on_outlined, size: 18, color: subtextColor),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                        filled: true,
+                        fillColor: inputFill,
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: brandColor)),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -484,15 +508,16 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
                     onPressed: () {
                       final picName = _picNameController.text.trim();
                       final picPhone = _picPhoneController.text.trim();
+                      final picAddress = _picAddressController.text.trim();
 
-                      if (picName.isEmpty || picPhone.isEmpty) {
+                      if (picName.isEmpty || picPhone.isEmpty || picAddress.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             backgroundColor: const Color(0xFF09090B),
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             content: Text(
-                              "Mohon lengkapi Nama PIC dan Nomor WhatsApp.",
+                              "Mohon lengkapi Nama PIC, Nomor WhatsApp, dan Lokasi Workshop.",
                               style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
                             ),
                           ),
@@ -502,15 +527,17 @@ class _RfqCustomOrderScreenState extends State<RfqCustomOrderScreen> {
 
                       final machine = "${p.name} (Custom Edition)";
                       final capacity = p.specifications.kapasitas;
-                      final features = _customFeaturesController.text.trim().isEmpty
+                      final baseFeatures = _customFeaturesController.text.trim().isEmpty
                           ? "Penyesuaian spesifikasi standar pabrik (Kustomisasi Pabrikasi)."
                           : _customFeaturesController.text.trim();
+
+                      final fullFeatures = "$baseFeatures\n\n[Lokasi Workshop / Instalasi: $picAddress]";
 
                       appState.submitRFQ(
                         machineType: machine,
                         capacity: capacity,
                         electrical: p.specifications.sumberListrik,
-                        features: features,
+                        features: fullFeatures,
                         budget: "Konsultasi Teknis & Penawaran Resmi",
                         targetDate: "Sesuai Jadwal Fabrikasi (30 Hari)",
                         attachment: null,
