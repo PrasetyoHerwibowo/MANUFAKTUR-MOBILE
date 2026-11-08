@@ -32,10 +32,10 @@ Branch aktif pengerjaan: **`fitur/ui-monokrom`**
 | :---: | :--- | :---: | :---: | :--- |
 | **Tahap 1** | Desain Sistem & Palet Warna | ✅ Selesai | `83ff3f2` | `app_colors.dart` & `app_theme.dart` beralih ke Zinc Monokrom & Pill CTA |
 | **Tahap 2** | Standardisasi Kode Model & Fungsi Mesin | ✅ Selesai | `ab02853` | `product_model.dart` & `mock_data.dart` diselaraskan dengan database web |
-| **Tahap 3.1**| Home: Industrial Hero Showcase Banner | ✅ Selesai | *(Sedang di-commit)* | Hero banner solid, background `GambarBG.jpg` monokrom web, tombol kapsul |
-| **Tahap 3.2**| Home: Series Navigation Tabs | ⏳ Siap Dikerjakan | - | Filter kapsul Zinc monokrom (Semua Lini, MD-Coffee, MD-Cocoa) |
-| **Tahap 3.3**| Home: Industrial Machine Card | ⏳ Mendatang | - | Kartu produk rasio 0.58, kode model MDI-RS50, fungsi mesin |
-| **Tahap 4** | Penyelarasan Halaman Detail Produk | ⏳ Mendatang | - | Function Preview Box, Brosur PDF, & Inverted Pill Action |
+| **Tahap 3.1**| Home: Industrial Hero Showcase Banner | ✅ Selesai | `f80c74f` | Hero banner solid, background `GambarBG.jpg` monokrom web, tombol kapsul |
+| **Tahap 3.2**| Home: Series Navigation Tabs & Search Bar | ✅ Selesai | `49074d8` | Tab monokrom pill (Semua Lini, MD-Coffee, MD-Cocoa) & Search bar pill 999px |
+| **Tahap 3.3**| Home: Industrial Machine Card & Clean Layout | ✅ Selesai | `49074d8` | Kode model MDI-xxx, badge lini, rasio 0.58, tombol bulat monokrom, hapus banner ganda |
+| **Tahap 4** | Penyelarasan Halaman Detail Produk | ⏳ Siap Dikerjakan | - | Function Preview Box, Brosur PDF, & Inverted Pill Action |
 | **Tahap 5** | Halaman Custom Order RFQ | ⏳ Mendatang | - | Engineering Helpdesk WA, Dynamic Specs, & Auto-Ticket |
 
 ---
