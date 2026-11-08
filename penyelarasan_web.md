@@ -39,6 +39,7 @@ Branch aktif pengerjaan: **`fitur/ui-monokrom`**
 | **Tahap 5** | Halaman Custom Order RFQ & WhatsApp Gateway | ✅ Selesai | `ff11fe0` | Form ringkas 30 detik, Kontak PIC, Auto-Ticket RFQ, Dialog WhatsApp Helpdesk |
 | **Tahap 6** | Halaman Kontak WhatsApp Resmi Lead Engineer | ✅ Selesai | `77e23e2` | Satukan kontak jadi 1 kanal resmi Lead Engineer, monokrom industrial, Inverted Zinc Pill |
 | **Tahap 7** | Formulir PO Standar & Pratinjau Bukti Transfer | ✅ Selesai | `6b4d31b` | Hapus catatan PO standar, standardisasi identitas PIC, slip pratinjau bukti DP 50% monokrom |
+| **Integrasi**| Sinkronisasi Merge Branch `main` | ✅ Selesai | `58f61ec` | Sinkronisasi PR Pesanan rekan tim, 0 konflik, lulus flutter analyze |
 
 ---
 
@@ -143,3 +144,13 @@ Seluruh komponen dalam ruang lingkup **Home (Tab 0)** beserta seluruh cabang alu
 8. Formulir RFQ Kustomisasi Mesin & Generator Tiket WhatsApp Resmi.
 9. Formulir Pemesanan PO Standar 30 Hari & Dialog Pratinjau Slip DP 50% Monokrom.
 10. Kanal Resmi WhatsApp Lead Engineer PT MDI.
+
+---
+
+## 5. Riwayat Integrasi Kolaborasi Tim (Merge Main)
+- **Commit**: `[fitur/ui-monokrom 58f61ec] merge: selaraskan pembaruan menu pesanan dari main ke branch ui-monokrom`
+- **Poin Penyelesaian**:
+  - Mengintegrasikan hasil merge PR rekan tim (fitur pesanan & auth) dari branch `main` ke branch `fitur/ui-monokrom`.
+  - Mempertahankan 100% kodingan pesanan milik rekan tim (`order_tracking_screen.dart` & `order_detail_screen.dart`).
+  - Menggabungkan data mock dan state manajemen (`mock_data.dart` & `app_state.dart`) secara harmonis.
+  - Memastikan seluruh kode lulus uji `flutter analyze` dengan **0 issues / 0 errors**.
