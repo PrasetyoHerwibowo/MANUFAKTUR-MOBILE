@@ -186,8 +186,8 @@ class ContactWhatsappScreen extends StatelessWidget {
               const SizedBox(height: 16),
             ],
 
-            // 2. KARTU KONTAK SALES & ENGINEERING
-            _buildSectionLabel("Kanal WhatsApp Resmi", textColor),
+            // 2. KARTU KONTAK TUNGGAL RESMI (LEAD ENGINEER & OFFICIAL SUPPORT)
+            _buildSectionLabel("Kontak Resmi Lead Engineer", textColor),
 
             _buildContactCard(
               context: context,
@@ -196,11 +196,11 @@ class ContactWhatsappScreen extends StatelessWidget {
               borderColor: borderColor,
               textColor: textColor,
               subtextColor: subtextColor,
-              pillBadgeText: "SALES & QUOTATION",
-              title: "Tim Sales Engineering Pabrik",
+              pillBadgeText: "LEAD ENGINEER & SUPPORT",
+              title: "Lead Engineer & Sales Pabrik",
               phoneDisplay: "+62 812-9876-5432",
-              desc: "Konsultasi PO 30 Hari, diskusi kalkulasi harga custom mesin, dan penerbitan Surat Penawaran Resmi.",
-              buttonLabel: hasTicket ? "Chat WhatsApp Engineer Sekarang" : "Buka Chat WhatsApp Sales",
+              desc: "Konsultasi langsung dengan Lead Engineer untuk pembahasan gambar teknik 3D, diskusi modifikasi kustom, penawaran harga PO, serta jadwal kunjungan workshop.",
+              buttonLabel: hasTicket ? "Chat Lead Engineer via WhatsApp" : "Buka Chat WhatsApp Resmi",
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -209,37 +209,8 @@ class ContactWhatsappScreen extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     content: Text(
                       hasTicket
-                          ? "Membuka WhatsApp Sales Engineering untuk Tiket $ticketNumber..."
-                          : "Membuka WhatsApp Sales Engineering (+62 812-9876-5432)...",
-                      style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            const SizedBox(height: 12),
-
-            _buildContactCard(
-              context: context,
-              isDark: isDark,
-              cardBg: cardBg,
-              borderColor: borderColor,
-              textColor: textColor,
-              subtextColor: subtextColor,
-              pillBadgeText: "TEKNISI & WORKSHOP",
-              title: "Helpdesk Teknisi & Servis",
-              phoneDisplay: "+62 813-1122-3344",
-              desc: "Konsultasi kelistrikan 3-phase/220V, suku cadang mesin kopi & kakao, serta jadwal kunjungan workshop.",
-              buttonLabel: "Buka Chat WhatsApp Teknisi",
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    backgroundColor: const Color(0xFF09090B),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    content: Text(
-                      "Membuka WhatsApp Helpdesk Teknisi (+62 813-1122-3344)...",
+                          ? "Membuka WhatsApp Lead Engineer untuk Tiket $ticketNumber..."
+                          : "Membuka WhatsApp Resmi Lead Engineer (+62 812-9876-5432)...",
                       style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
                     ),
                   ),
