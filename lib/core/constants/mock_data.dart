@@ -39,7 +39,7 @@ class MockData {
           videoReviewTitle: 'Tutorial Kalibrasi Sample Kopi MicroRoast 100g',
           videoReviewDuration: '06:45',
           isCustomizable: false,
-          stockStatus: 'Pre-Order 14 Hari',
+          stockStatus: 'Pre-Order 30 Hari',
         ),
         ProductModel(
           id: 'PROD-ROAST-04',
@@ -71,7 +71,7 @@ class MockData {
           videoReviewTitle: 'Demo Roasting 1kg Batch Profil Specialty Kopi',
           videoReviewDuration: '12:40',
           isCustomizable: true,
-          stockStatus: 'Pre-Order 14 Hari',
+          stockStatus: 'Pre-Order 30 Hari',
         ),
         ProductModel(
           id: 'PROD-ROAST-08',
@@ -197,7 +197,7 @@ class MockData {
           videoReviewTitle: 'Uji Kupas Buah Kopi Basah dengan Pulper Single Roll',
           videoReviewDuration: '07:30',
           isCustomizable: false,
-          stockStatus: 'Pre-Order 14 Hari',
+          stockStatus: 'Pre-Order 30 Hari',
         ),
         ProductModel(
           id: 'PROD-HKP-05',
@@ -229,7 +229,7 @@ class MockData {
           videoReviewTitle: 'Proses Kupas Kulit Tanduk Kopi Kering dengan Huller UMKM',
           videoReviewDuration: '09:15',
           isCustomizable: false,
-          stockStatus: 'Pre-Order 14 Hari',
+          stockStatus: 'Pre-Order 30 Hari',
         ),
         ProductModel(
           id: 'PROD-HKP-16',
@@ -261,7 +261,7 @@ class MockData {
           videoReviewTitle: 'Kalibrasi Presisi Suhu & Pressure Profiling Espresso 3-Group',
           videoReviewDuration: '16:45',
           isCustomizable: true,
-          stockStatus: 'Pre-Order 14 Hari',
+          stockStatus: 'Pre-Order 30 Hari',
         ),
 
         // =========================================================================
@@ -297,7 +297,7 @@ class MockData {
           videoReviewTitle: 'Efisiensi Pemecahan Buah Kakao dengan Pod Breaker',
           videoReviewDuration: '08:50',
           isCustomizable: false,
-          stockStatus: 'Pre-Order 14 Hari',
+          stockStatus: 'Pre-Order 30 Hari',
         ),
         ProductModel(
           id: 'PROD-KKO-04',
