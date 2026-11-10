@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +26,9 @@ class OrderDetailScreen extends StatefulWidget {
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
   String? _pelunasanProofName;
+  UploadResult? _pelunasanUploadResult;
+  String? _dpProofName;
+  UploadResult? _dpUploadResult;
 
   String _formatCurrency(double amount) {
     return "Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}";
@@ -64,7 +70,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final isDark = appState.isDarkMode;
-    final o = widget.order;
+    // Ambil order secara reaktif dari AppState agar update status langsung tampil realtime di layar
+    final o = appState.orders.firstWhere(
+      (item) => item.id == widget.order.id || item.poNumber == widget.order.poNumber,
+      orElse: () => widget.order,
+    );
 
     final totalFormatted = _formatCurrency(o.totalAmount);
     final dpFormatted = _formatCurrency(o.dpAmount);
@@ -514,22 +524,296 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     isDark: isDark,
                   ),
 
-                  // Tombol Pelunasan jika tahap 5
+                  // 1. Banner Menunggu Verifikasi DP 50%
+                  if (o.status == OrderStatus.verifikasiDp) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD97706).withValues(alpha: isDark ? 0.2 : 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFD97706), width: 1.2),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.hourglass_top_rounded, color: Color(0xFFD97706), size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "STATUS: MENUNGGU VERIFIKASI DP (50%)",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11.5,
+                                    color: const Color(0xFFD97706),
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  "Bukti transfer DP 50% ($dpFormatted) sedang diverifikasi oleh Tim Finance & Admin Pabrik. Mohon menunggu konfirmasi.",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10.5,
+                                    color: isDark ? Colors.white70 : const Color(0xFF92400E),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // 2. Banner & Tombol Upload Ulang DP jika Ditolak Admin
+                  if (o.status == OrderStatus.dpDitolak) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: isDark ? 0.2 : 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.red, width: 1.2),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.cancel_rounded, color: Colors.red, size: 22),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  "BUKTI TRANSFER DP DITOLAK ADMIN",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            o.rejectionReason != null && o.rejectionReason!.isNotEmpty
+                                ? "Catatan Admin: ${o.rejectionReason}"
+                                : "Bukti transfer tidak terbaca atau nominal tidak sesuai (Wajib 50%: $dpFormatted). Silakan unggah bukti transfer yang valid.",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: isDark ? Colors.white70 : const Color(0xFF991B1B),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _showReuploadDpModal(context, appState, o),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 11),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              icon: const Icon(Icons.upload_file, size: 18),
+                              label: const Text(
+                                "UNGGAH ULANG BUKTI DP (50%)",
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // 3. Tombol Pelunasan jika tahap 5
                   if (o.status == OrderStatus.menungguPelunasan) ...[
                     const SizedBox(height: 14),
-                    SizedBox(
+                    Container(
                       width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _showPelunasanModal(context, appState, o),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.warning,
-                          padding: const EdgeInsets.symmetric(vertical: 11),
-                        ),
-                        icon: const Icon(Icons.upload_file, size: 18),
-                        label: const Text(
-                          "UPLOAD BUKTI PELUNASAN (50%)",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                        ),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD97706).withValues(alpha: isDark ? 0.2 : 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFD97706), width: 1.2),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 22),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  "STATUS: MENUNGGU PELUNASAN SISA 50%",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: const Color(0xFFD97706),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            "Mesin telah lulus Quality Control (QC) & siap dikirim. Silakan unggah bukti transfer pelunasan sisa 50% ($sisaFormatted).",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: isDark ? Colors.white70 : const Color(0xFF92400E),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _showPelunasanModal(context, appState, o),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD97706),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 11),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              icon: const Icon(Icons.upload_file, size: 18),
+                              label: const Text(
+                                "FORMULIR UPLOAD PELUNASAN (50%)",
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // 4. Banner Menunggu Verifikasi Pelunasan (Menunggu ACC Admin Website)
+                  if (o.status == OrderStatus.verifikasiPelunasan) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0284C7).withValues(alpha: isDark ? 0.2 : 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF0284C7), width: 1.2),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.hourglass_top_rounded, color: Color(0xFF0284C7), size: 22),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  "STATUS: MENUNGGU VERIFIKASI PELUNASAN",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: const Color(0xFF0284C7),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            "Bukti transfer pelunasan 50% ($sisaFormatted) telah diterima dan sedang divalidasi oleh Tim Finance Pabrik. Status pengiriman akan aktif setelah disetujui admin.",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: isDark ? Colors.white70 : const Color(0xFF0369A1),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () => _showPelunasanModal(context, appState, o),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF0284C7),
+                                side: const BorderSide(color: Color(0xFF0284C7)),
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              icon: const Icon(Icons.edit_document, size: 16),
+                              label: const Text(
+                                "UNGGAH ULANG BUKTI PELUNASAN",
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // 5. Banner Bukti Pelunasan Ditolak Admin
+                  if (o.status == OrderStatus.pelunasanDitolak) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: isDark ? 0.2 : 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.red, width: 1.2),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.cancel_rounded, color: Colors.red, size: 22),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  "BUKTI TRANSFER PELUNASAN DITOLAK ADMIN",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            o.rejectionReason != null && o.rejectionReason!.isNotEmpty
+                                ? "Catatan Admin: ${o.rejectionReason}"
+                                : "Bukti transfer pelunasan tidak valid atau nominal tidak sesuai ($sisaFormatted). Silakan unggah bukti yang benar.",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: isDark ? Colors.white70 : const Color(0xFF991B1B),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _showPelunasanModal(context, appState, o),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 11),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              icon: const Icon(Icons.upload_file, size: 18),
+                              label: const Text(
+                                "UNGGAH ULANG BUKTI PELUNASAN (50%)",
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -963,8 +1247,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => SafeArea(
+      builder: (context) {
+        bool isSubmitting = false;
+        return StatefulBuilder(
+          builder: (context, setModalState) => SafeArea(
           child: Container(
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.88,
@@ -1175,11 +1461,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
                   InkWell(
                     onTap: () async {
-                      final name = await FilePickerHelper.pickFileName();
-                      setModalState(() {
-                        _pelunasanProofName =
-                            name ?? 'bukti_pelunasan_50_percent.jpg';
-                      });
+                      final result = await FilePickerHelper.showUploadSourceSheet(
+                        context: context,
+                        title: "Unggah Bukti Pelunasan 50%",
+                        subtitle: "Pilih foto struk ATM, screenshot m-Banking, atau file PDF",
+                        isDark: isDark,
+                        brandColor: AppColors.primary,
+                      );
+                      if (result != null) {
+                        setModalState(() {
+                          _pelunasanProofName = result.fileName;
+                          _pelunasanUploadResult = result;
+                        });
+                      }
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
@@ -1252,12 +1546,61 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     width: double.infinity,
                     height: 48,
                     child: ElevatedButton(
-                      onPressed: () {
-                        final proof =
-                            _pelunasanProofName ?? 'bukti_pelunasan_50_percent.jpg';
-                        appState.uploadPelunasanProof(order.id, proof);
-                        Navigator.pop(context);
-                      },
+                      onPressed: isSubmitting
+                          ? null
+                          : () async {
+                              if (_pelunasanProofName == null && _pelunasanUploadResult == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Silakan pilih file bukti transfer pelunasan terlebih dahulu!"),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              setModalState(() => isSubmitting = true);
+
+                              Uint8List? bytes = _pelunasanUploadResult?.fileBytes;
+                              if (bytes == null && _pelunasanUploadResult?.filePath != null) {
+                                try {
+                                  bytes = await File(_pelunasanUploadResult!.filePath!).readAsBytes();
+                                } catch (_) {}
+                              }
+
+                              String proof = _pelunasanProofName ?? 'bukti_pelunasan_50_percent.jpg';
+                              if (bytes != null) {
+                                final name = (_pelunasanUploadResult?.fileName ?? '').toLowerCase();
+                                String mime = 'jpeg';
+                                if (name.endsWith('.png')) {
+                                  mime = 'png';
+                                } else if (name.endsWith('.webp')) {
+                                  mime = 'webp';
+                                } else if (name.endsWith('.pdf')) {
+                                  mime = 'pdf';
+                                }
+
+                                final prefix = mime == 'pdf'
+                                    ? 'data:application/pdf;base64,'
+                                    : 'data:image/$mime;base64,';
+                                proof = '$prefix${base64Encode(bytes)}';
+                              }
+
+                              await appState.uploadPelunasanProof(order.id, proof);
+
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "Bukti pelunasan terkirim! Status: Menunggu verifikasi admin.",
+                                    ),
+                                    backgroundColor: AppColors.success,
+                                    duration: Duration(seconds: 4),
+                                  ),
+                                );
+                              }
+                            },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
                         foregroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
@@ -1266,14 +1609,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: Text(
-                        "KONFIRMASI UPLOAD PELUNASAN",
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12.5,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
+                      child: isSubmitting
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  isDark ? const Color(0xFF0F172A) : Colors.white,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              "KONFIRMASI UPLOAD PELUNASAN",
+                              style: GoogleFonts.plusJakartaSans(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12.5,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
                     ),
                   ),
                 ],
@@ -1281,7 +1635,411 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
           ),
         ),
+      );
+    },
+  );
+}
+
+  void _showReuploadDpModal(
+      BuildContext context, AppState appState, OrderModel order) {
+    final isDark = appState.isDarkMode;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      builder: (context) {
+        bool isSubmitting = false;
+        return StatefulBuilder(
+          builder: (context, setModalState) => SafeArea(
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.88,
+              ),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                    20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 24),
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Handle bar
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white24 : Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+
+                    // Header with Title & Close button
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Formulir Unggah Ulang Bukti DP 50%",
+                                style: GoogleFonts.outfit(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                "PO: ${order.poNumber} • ${order.productName}",
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          color: isDark ? Colors.white70 : const Color(0xFF475569),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Divider(color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+                    const SizedBox(height: 12),
+
+                    // Info DP Box
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Nominal Wajib DP 50%",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Rp ${order.dpAmount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}",
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: isDark ? Colors.white12 : const Color(0xFFCBD5E1),
+                              ),
+                            ),
+                            child: Text(
+                              "Tahap 1/7",
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white70 : const Color(0xFF475569),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Rekening Tujuan Transfer Pabrik
+                    Text(
+                      "Pilih Rekening Tujuan Transfer DP:",
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white70 : const Color(0xFF334155),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.account_balance_rounded,
+                              size: 20,
+                              color: isDark ? Colors.white70 : const Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "BCA Corporate — PT Kopi Industri",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  "088-2930-112 (a.n. PT Kopi Industri)",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11.5,
+                                    color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // Upload Bukti Box
+                    Text(
+                      "Unggah Bukti Transfer DP Baru:",
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white70 : const Color(0xFF334155),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    InkWell(
+                      onTap: () async {
+                        final result = await FilePickerHelper.showUploadSourceSheet(
+                          context: context,
+                          title: "Unggah Bukti Transfer DP 50%",
+                          subtitle: "Pilih foto struk ATM, screenshot m-Banking, atau file PDF",
+                          isDark: isDark,
+                          brandColor: AppColors.primary,
+                        );
+                        if (result != null) {
+                          setModalState(() {
+                            _dpProofName = result.fileName;
+                            _dpUploadResult = result;
+                          });
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: _dpProofName != null
+                              ? (isDark ? const Color(0xFF132E1E) : const Color(0xFFF0FDF4))
+                              : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC)),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _dpProofName != null
+                                ? const Color(0xFF16A34A)
+                                : (isDark ? Colors.white12 : const Color(0xFFCBD5E1)),
+                            width: _dpProofName != null ? 1.4 : 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _dpProofName != null
+                                  ? Icons.check_circle_rounded
+                                  : Icons.cloud_upload_outlined,
+                              size: 22,
+                              color: _dpProofName != null
+                                  ? const Color(0xFF16A34A)
+                                  : (isDark ? Colors.white60 : const Color(0xFF64748B)),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _dpProofName ?? "Pilih File Bukti Transfer DP Baru",
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      color: _dpProofName != null
+                                          ? (isDark ? Colors.white : const Color(0xFF15803D))
+                                          : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _dpProofName != null
+                                        ? "File siap diunggah ke sistem verifikasi finance pabrik"
+                                        : "Format JPG, PNG, atau PDF (Maks. 10MB)",
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 10.5,
+                                      color: isDark ? Colors.white54 : const Color(0xFF94A3B8),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    // Tombol Konfirmasi Unggah Ulang DP
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: isSubmitting
+                            ? null
+                            : () async {
+                                if (_dpProofName == null && _dpUploadResult == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("Silakan pilih file bukti transfer DP terlebih dahulu!"),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setModalState(() => isSubmitting = true);
+
+                                Uint8List? bytes = _dpUploadResult?.fileBytes;
+                                if (bytes == null && _dpUploadResult?.filePath != null) {
+                                  try {
+                                    bytes = await File(_dpUploadResult!.filePath!).readAsBytes();
+                                  } catch (_) {}
+                                }
+
+                                String proof = _dpProofName ?? 'bukti_dp_50_percent.jpg';
+                                if (bytes != null) {
+                                  final name = (_dpUploadResult?.fileName ?? '').toLowerCase();
+                                  String mime = 'jpeg';
+                                  if (name.endsWith('.png')) {
+                                    mime = 'png';
+                                  } else if (name.endsWith('.webp')) {
+                                    mime = 'webp';
+                                  } else if (name.endsWith('.pdf')) {
+                                    mime = 'pdf';
+                                  }
+
+                                  final prefix = mime == 'pdf'
+                                      ? 'data:application/pdf;base64,'
+                                      : 'data:image/$mime;base64,';
+                                  proof = '$prefix${base64Encode(bytes)}';
+                                }
+
+                                await appState.reuploadDpProof(order.id, proof);
+
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "Bukti DP baru terkirim! Status: Menunggu verifikasi admin.",
+                                      ),
+                                      backgroundColor: AppColors.success,
+                                      duration: Duration(seconds: 4),
+                                    ),
+                                  );
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
+                          foregroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: isSubmitting
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    isDark ? const Color(0xFF0F172A) : Colors.white,
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                "KONFIRMASI UNGGAH ULANG DP",
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12.5,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

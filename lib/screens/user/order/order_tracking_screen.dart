@@ -97,40 +97,58 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                 controller: _tabController,
                 children: [
                   // TAB 1: Standar PO Orders
-                  allOrders.isEmpty
-                      ? _buildEmptyState(
-                          icon: Icons.inventory_2_outlined,
-                          title: "Belum Ada Pesanan Mesin",
-                          message: "Anda belum memiliki transaksi Purchase Order (PO) mesin saat ini.",
-                          isDark: isDark,
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: allOrders.length,
-                          itemBuilder: (context, index) {
-                            final order = allOrders[index];
-                            return _buildPoCard(context, appState, order, isDark);
-                          },
-                        ),
+                  RefreshIndicator(
+                    onRefresh: () => appState.loadOrdersFromBackend(),
+                    child: allOrders.isEmpty
+                        ? SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.65,
+                              child: _buildEmptyState(
+                                icon: Icons.inventory_2_outlined,
+                                title: "Belum Ada Pesanan Mesin",
+                                message: "Anda belum memiliki transaksi Purchase Order (PO) mesin saat ini.",
+                                isDark: isDark,
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                            itemCount: allOrders.length,
+                            itemBuilder: (context, index) {
+                              final order = allOrders[index];
+                              return _buildPoCard(context, appState, order, isDark);
+                            },
+                          ),
+                  ),
 
                   // TAB 2: Custom RFQ Orders
-                  rfqOrders.isEmpty
-                      ? _buildEmptyState(
-                          icon: Icons.settings_suggest_outlined,
-                          title: "Belum Ada Pengajuan Custom RFQ",
-                          message: "Pengajuan spesifikasi custom mesin Anda akan tampil di sini.",
-                          isDark: isDark,
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: rfqOrders.length,
-                          itemBuilder: (context, index) {
-                            final rfq = rfqOrders[index];
-                            return _buildRfqCard(context, rfq, isDark);
-                          },
-                        ),
+                  RefreshIndicator(
+                    onRefresh: () => appState.loadOrdersFromBackend(),
+                    child: rfqOrders.isEmpty
+                        ? SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.65,
+                              child: _buildEmptyState(
+                                icon: Icons.settings_suggest_outlined,
+                                title: "Belum Ada Pengajuan Custom RFQ",
+                                message: "Pengajuan spesifikasi custom mesin Anda akan tampil di sini.",
+                                isDark: isDark,
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                            itemCount: rfqOrders.length,
+                            itemBuilder: (context, index) {
+                              final rfq = rfqOrders[index];
+                              return _buildRfqCard(context, rfq, isDark);
+                            },
+                          ),
+                  ),
                 ],
               ),
             ),
@@ -590,10 +608,14 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: order.status == OrderStatus.menungguPelunasan
-                            ? AppColors.warning
-                            : (isDark ? Colors.white : const Color(0xFF0F172A)),
-                        foregroundColor: order.status == OrderStatus.menungguPelunasan
+                        backgroundColor: (order.status == OrderStatus.dpDitolak || order.status == OrderStatus.pelunasanDitolak)
+                            ? Colors.red
+                            : (order.status == OrderStatus.menungguPelunasan
+                                ? AppColors.warning
+                                : (isDark ? Colors.white : const Color(0xFF0F172A))),
+                        foregroundColor: (order.status == OrderStatus.dpDitolak ||
+                                order.status == OrderStatus.pelunasanDitolak ||
+                                order.status == OrderStatus.menungguPelunasan)
                             ? Colors.white
                             : (isDark ? const Color(0xFF0F172A) : Colors.white),
                         elevation: isDark ? 2 : 0,
@@ -606,9 +628,13 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            order.status == OrderStatus.menungguPelunasan
-                                ? "Pelunasan"
-                                : "Detail Pesanan",
+                            order.status == OrderStatus.dpDitolak
+                                ? "Unggah Ulang DP"
+                                : (order.status == OrderStatus.pelunasanDitolak
+                                    ? "Unggah Ulang Pelunasan"
+                                    : (order.status == OrderStatus.menungguPelunasan
+                                        ? "Pelunasan"
+                                        : "Detail Pesanan")),
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
