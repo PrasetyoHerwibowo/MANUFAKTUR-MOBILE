@@ -436,13 +436,13 @@ class ApiService {
         }
       }
     } catch (e) {
-      debugPrint('ApiService fetchOrders error: ');
+      debugPrint('ApiService fetchOrders error: $e');
     }
     return null;
   }
 
   static Future<Map<String, dynamic>?> createOrder({
-    required int machineId,
+    required dynamic machineId,
     required int quantity,
     required String deliveryAddress,
     String? customNotes,

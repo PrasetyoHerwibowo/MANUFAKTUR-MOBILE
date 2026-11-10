@@ -27,6 +27,9 @@ class AppNotification {
 
 class AppState extends ChangeNotifier {
   Timer? _orderPollingTimer;
+  bool _isFetchingOrders = false;
+  bool _isFetchingProducts = false;
+  int _catalogPollCounter = 0;
 
   AppState() {
     _initSessionAndPolling();
@@ -72,12 +75,17 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  /// Mulai polling berkala setiap 5 detik saat pengguna login
+  /// Mulai polling berkala saat pengguna login (Orders setiap 8 detik, Katalog Mesin real-time)
   void _startOrderPolling() {
     _orderPollingTimer?.cancel();
-    _orderPollingTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+    _orderPollingTimer = Timer.periodic(const Duration(seconds: 8), (_) async {
       if (_isLoggedIn) {
         await loadOrdersFromBackend();
+        _catalogPollCounter++;
+        if (_catalogPollCounter >= 2) {
+          _catalogPollCounter = 0;
+          await loadProductsFromBackend(silent: true);
+        }
       }
     });
   }
@@ -338,10 +346,14 @@ class AppState extends ChangeNotifier {
     return _products!;
   }
 
-  /// Memuat daftar mesin dari Laravel REST API
-  Future<void> loadProductsFromBackend() async {
-    _isLoadingProducts = true;
-    notifyListeners();
+  /// Memuat daftar mesin dari Laravel REST API secara real-time
+  Future<void> loadProductsFromBackend({bool silent = false}) async {
+    if (_isFetchingProducts) return;
+    _isFetchingProducts = true;
+    if (!silent && (_products == null || _products!.isEmpty)) {
+      _isLoadingProducts = true;
+      notifyListeners();
+    }
 
     try {
       final backendMachines = await ApiService.fetchMachines();
@@ -351,6 +363,7 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       debugPrint('Fallback loading products: $e');
     } finally {
+      _isFetchingProducts = false;
       _isLoadingProducts = false;
       notifyListeners();
     }
@@ -599,9 +612,22 @@ class AppState extends ChangeNotifier {
 
     // Kirim Purchase Order ke Backend Laravel & upload bukti ke Supabase Storage
     try {
-      final machineIdInt = int.tryParse(product.id) ?? 1;
+      int? machineIdInt = int.tryParse(product.id);
+      if (machineIdInt == null || machineIdInt <= 0) {
+        if (_products != null) {
+          for (final p in _products!) {
+            if (p.name.trim().toLowerCase() == product.name.trim().toLowerCase() ||
+                (p.machineType.isNotEmpty && p.machineType == product.machineType)) {
+              machineIdInt = int.tryParse(p.id);
+              break;
+            }
+          }
+        }
+      }
+      final dynamic finalMachineId = machineIdInt ?? product.modelName ?? product.id;
+
       final apiRes = await ApiService.createOrder(
-        machineId: machineIdInt,
+        machineId: finalMachineId,
         quantity: quantity,
         deliveryAddress: deliveryAddress,
         customNotes: customNotes,
@@ -647,11 +673,15 @@ class AppState extends ChangeNotifier {
 
   /// Sinkronisasi daftar pesanan dari backend Laravel & status Supabase
   Future<void> loadOrdersFromBackend() async {
+    if (_isFetchingOrders) return;
+    _isFetchingOrders = true;
+
     try {
       final orderData = await ApiService.fetchOrders();
-      if (orderData != null && orderData.isNotEmpty) {
-        final List<OrderModel> backendOrders = [];
-        for (final item in orderData) {
+      if (orderData != null) {
+        if (orderData.isNotEmpty) {
+          final List<OrderModel> backendOrders = [];
+          for (final item in orderData) {
           OrderStatus parsedStatus = OrderStatus.verifikasiDp;
           final prodStatus = (item['production_status'] ?? item['status'])?.toString().toLowerCase().trim();
           final paymentStatus = item['payment_status']?.toString().toLowerCase().trim();
@@ -789,17 +819,23 @@ class AppState extends ChangeNotifier {
           }
         }
 
-        _orders.clear();
-        if (backendOrders.isNotEmpty) {
-          _orders.addAll(backendOrders);
+          _orders.clear();
+          if (backendOrders.isNotEmpty) {
+            _orders.addAll(backendOrders);
+          }
+          notifyListeners();
+        } else {
+          // Hanya hapus jika backend secara eksplisit mengembalikan list kosong []
+          _orders.clear();
+          notifyListeners();
         }
-        notifyListeners();
-      } else {
-        _orders.clear();
-        notifyListeners();
       }
+      // PENTING: Jika orderData == null (timeout/koneksi terputus sesaat),
+      // JANGAN hapus _orders lokal agar pesanan tidak "tiba-tiba hilang" dari layar.
     } catch (e) {
       debugPrint('loadOrdersFromBackend error: $e');
+    } finally {
+      _isFetchingOrders = false;
     }
   }
 

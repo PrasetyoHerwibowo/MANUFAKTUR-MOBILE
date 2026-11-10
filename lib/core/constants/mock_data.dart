@@ -10,7 +10,7 @@ class MockData {
         // 1. ROASTER KOPI (4 Produk: Rp 4 Juta - 525 Juta)
         // =========================================================================
         ProductModel(
-          id: 'PROD-ROAST-01',
+          id: '14',
           name: 'MicroRoast 100g Lab Sample Roaster',
           category: 'Roaster Kopi',
           commodity: 'Kopi',
@@ -40,7 +40,7 @@ class MockData {
           stockStatus: 'Pre-Order 14 Hari',
         ),
         ProductModel(
-          id: 'PROD-ROAST-04',
+          id: '15',
           name: 'ProRoast 1 kg / Batch Shop Roaster',
           category: 'Roaster Kopi',
           commodity: 'Kopi',
@@ -160,7 +160,7 @@ class MockData {
         // 2. MESIN HULU-HILIR KOPI (3 Produk: Rp 9.5 Juta - 68 Juta)
         // =========================================================================
         ProductModel(
-          id: 'PROD-HKP-01',
+          id: '1',
           name: 'Mesin Pulper Kopi Basah Single Roll',
           category: 'Mesin Kopi',
           commodity: 'Kopi',
@@ -168,7 +168,7 @@ class MockData {
           machineType: 'Pulper Kopi',
           modelName: '300-500 kg/Jam',
           capacityScale: 'Komersial / UMKM (3 - 10 kg)',
-          price: 9500000,
+          price: 18500000,
           rating: 4.8,
           reviewsCount: 31,
           imageUrl: 'https://images.unsplash.com/photo-1524350876685-274059332603?w=800&auto=format&fit=crop&q=80',

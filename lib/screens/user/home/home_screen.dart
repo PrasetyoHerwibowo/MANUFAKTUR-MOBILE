@@ -93,42 +93,45 @@ class _HomeScreenState extends State<HomeScreen> {
     final isDark = appState.isDarkMode;
     final filteredProducts = appState.filteredProducts;
 
-    return SingleChildScrollView(
-      controller: _scrollController,
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 10),
+    return RefreshIndicator(
+      onRefresh: () => appState.loadProductsFromBackend(),
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 10),
 
-          // 1. Promotional Banner Carousel
-          _buildBannerCarousel(context, isDark),
+            // 1. Promotional Banner Carousel
+            _buildBannerCarousel(context, isDark),
 
-          const SizedBox(height: 14),
+            const SizedBox(height: 14),
 
-          // 2. Category Selector (Horizontal Pills)
-          _buildCategorySelector(appState, isDark),
+            // 2. Category Selector (Horizontal Pills)
+            _buildCategorySelector(appState, isDark),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          // 4. Section Header: Title & Count
-          _buildSectionHeader(context, appState, isDark, filteredProducts.length),
+            // 4. Section Header: Title & Count
+            _buildSectionHeader(context, appState, isDark, filteredProducts.length),
 
-          const SizedBox(height: 10),
+            const SizedBox(height: 10),
 
-          // 5. Product Display (Clean 2-Column Grid View)
-          if (filteredProducts.isEmpty)
-            _buildEmptyState(appState, isDark)
-          else
-            _buildProductGrid(context, appState, isDark, filteredProducts),
+            // 5. Product Display (Clean 2-Column Grid View)
+            if (filteredProducts.isEmpty)
+              _buildEmptyState(appState, isDark)
+            else
+              _buildProductGrid(context, appState, isDark, filteredProducts),
 
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          // 6. WhatsApp Engineering Consultation Banner (Soft Mint Tone)
-          _buildConsultationBanner(context, isDark),
+            // 6. WhatsApp Engineering Consultation Banner (Soft Mint Tone)
+            _buildConsultationBanner(context, isDark),
 
-          const SizedBox(height: 24),
-        ],
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
