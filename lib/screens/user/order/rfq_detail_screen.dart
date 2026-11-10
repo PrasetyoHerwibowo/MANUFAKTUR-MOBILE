@@ -34,6 +34,11 @@ class RfqDetailScreen extends StatelessWidget {
     final appState = Provider.of<AppState>(context);
     final isDark = appState.isDarkMode;
 
+    final rfq = appState.customOrders.firstWhere(
+      (item) => item.id == this.rfq.id || item.rfqNumber == this.rfq.rfqNumber,
+      orElse: () => this.rfq,
+    );
+
     final cardBg = isDark ? AppColors.darkSurface : Colors.white;
     final borderColor = isDark ? Colors.white10 : const Color(0xFFE2E8F0);
     final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
