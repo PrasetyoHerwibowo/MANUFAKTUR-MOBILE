@@ -14,6 +14,9 @@ class RfqDetailScreen extends StatelessWidget {
   const RfqDetailScreen({super.key, required this.rfq});
 
   String _resolveRfqImage(CustomOrderModel rfq) {
+    if (rfq.imageUrl != null && rfq.imageUrl!.isNotEmpty) {
+      return rfq.imageUrl!;
+    }
     final typeLower = rfq.machineType.toLowerCase();
     if (typeLower.contains('espresso')) {
       return 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&auto=format&fit=crop&q=80';
