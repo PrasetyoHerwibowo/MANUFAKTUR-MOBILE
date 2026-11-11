@@ -51,6 +51,19 @@ class ProductModel {
   final String? _machineType;
   String get machineType => _machineType ?? '';
 
+  final String? modelCode; // Official Web Model Code (e.g. MDI-RS50, MDI-PL200)
+  final String? function; // Machine primary function description
+
+  String get modelCodeDisplay =>
+      (modelCode != null && modelCode!.isNotEmpty)
+          ? modelCode!
+          : (modelName != null && modelName!.isNotEmpty
+              ? modelName!
+              : (machineType.isNotEmpty ? machineType : 'MDI-UNIT'));
+
+  String get functionPreview =>
+      (function != null && function!.isNotEmpty) ? function! : description;
+
   final String? modelName; // Khusus kopi: model/kapasitas tertentu e.g. 'Model 5 kg / Batch'
   final String? capacityScale; // e.g. 'Mikro / Lab (< 3 kg)', 'Komersial / UMKM (3 - 10 kg)', 'Industri (> 10 kg)'
   final List<CoffeeCapacityModel>? _capacityModels;
@@ -75,6 +88,8 @@ class ProductModel {
     String? commodity = 'Kopi',
     String? processStage = 'Hilir',
     String? machineType = '',
+    this.modelCode,
+    this.function,
     this.modelName,
     this.capacityScale,
     List<CoffeeCapacityModel>? capacityModels = const [],
@@ -88,9 +103,43 @@ class ProductModel {
     required this.videoReviewTitle,
     required this.videoReviewDuration,
     this.isCustomizable = true,
-    this.stockStatus = 'Pre-Order 14 Hari',
+    this.stockStatus = 'Pre-Order 30 Hari',
   })  : _commodity = commodity ?? 'Kopi',
         _processStage = processStage ?? 'Hilir',
         _machineType = machineType ?? '',
         _capacityModels = capacityModels ?? const [];
+
+  factory ProductModel.fromJson(Map<String, dynamic> json) {
+    return ProductModel(
+      id: (json['id'] ?? '').toString(),
+      name: json['name'] ?? 'Mesin Manufaktur',
+      category: json['category'] ?? 'Mesin Industri',
+      commodity: json['commodity'] ?? 'Kopi',
+      processStage: json['process_stage'] ?? 'Hulu',
+      machineType: json['model_code'] ?? '',
+      modelCode: json['model_code'],
+      function: json['function'],
+      modelName: json['model_code'],
+      price: (json['price'] is num) ? (json['price'] as num).toDouble() : 50000000.0,
+      rating: (json['rating'] is num) ? (json['rating'] as num).toDouble() : 4.9,
+      reviewsCount: 18,
+      imageUrl: json['image_url'] ?? 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=800&auto=format&fit=crop&q=80',
+      description: json['description'] ?? json['function'] ?? '',
+      specifications: TechnicalSpec(
+        tipe: json['model_code'] ?? 'Industri',
+        kapasitas: json['capacity'] ?? 'Standar Produksi',
+        sumberListrik: '220V / 380V 3-Phase',
+        dayaListrik: json['power'] ?? 'Sesuai Standar',
+        dimensi: json['dimension'] ?? 'Sesuai Spesifikasi',
+        berat: json['weight'] ?? 'Sesuai Spesifikasi',
+        materialBoiler: 'Stainless Steel 304 Food Grade',
+        kapasitasBoiler: 'Tungku / Silinder Khusus',
+      ),
+      manualBookPdfName: 'Brosur_${json['model_code'] ?? 'MDI'}.pdf',
+      videoReviewTitle: 'Uji Fungsi & Demo ${json['name'] ?? ''}',
+      videoReviewDuration: '04:15',
+      isCustomizable: true,
+      stockStatus: 'Pre-Order 30 Hari',
+    );
+  }
 }

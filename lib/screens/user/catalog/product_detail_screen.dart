@@ -49,10 +49,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           )
         : p.specifications;
 
-    final brandColor = p.commodity == 'Kakao'
-        ? AppColors.brandCocoa
-        : (p.commodity == 'Roaster Kopi' ? const Color(0xFFDC2626) : AppColors.brandCoffee);
-
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
       body: CustomScrollView(
@@ -156,82 +152,127 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // A. Category & Pre-Order Status Row
+                  // A. Category Pill & Stock Status Row (Web Aligned)
                   Row(
                     children: [
-                      Text(
-                        p.category.toUpperCase(),
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                          color: brandColor,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkSurface : AppColors.surfaceVariant, // Zinc 100
+                          borderRadius: BorderRadius.circular(999), // Web Pill Shape
+                          border: Border.all(
+                            color: isDark ? AppColors.darkBorder : AppColors.border,
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          p.category.toUpperCase(),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.6,
+                            color: isDark ? Colors.white : AppColors.textPrimary,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        width: 4,
-                        height: 4,
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDark ? Colors.white30 : const Color(0xFF94A3B8),
+                          color: isDark ? AppColors.darkSurface : AppColors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: isDark ? AppColors.darkBorder : AppColors.border,
+                            width: 0.8,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        p.stockStatus,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFFD97706),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 5,
+                              height: 5,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFF10B981), // Emerald active dot
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              p.stockStatus,
+                              style: GoogleFonts.inter(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
 
-                  // B. Machine Name (Clean, Bold, Crisp)
+                  // B. Machine Name (Plus Jakarta Sans Extra Bold)
                   Text(
                     p.name,
-                    style: GoogleFonts.outfit(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
+                      letterSpacing: -0.4,
                       height: 1.25,
                     ),
                   ),
 
+                  // C. Official Model Code (Web .card-model)
+                  if (p.modelCodeDisplay.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      "KODE MODEL: ${p.modelCodeDisplay}",
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+
                   const SizedBox(height: 12),
 
-                  // C. Price & Essential Terms (Responsive Wrap, Zero Overflow)
+                  // D. Price & PO Terms (Zinc Monochrome Aligned)
                   Wrap(
                     crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    runSpacing: 4,
+                    spacing: 10,
+                    runSpacing: 6,
                     children: [
                       Text(
                         formattedPrice,
-                        style: GoogleFonts.outfit(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: brandColor,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(6),
+                          color: isDark ? AppColors.darkSurface : AppColors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: isDark ? AppColors.darkBorder : AppColors.border,
+                            width: 0.8,
+                          ),
                         ),
                         child: Text(
                           "Termin DP 50% • Sistem PO",
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
+                          style: GoogleFonts.inter(
+                            fontSize: 10.5,
                             fontWeight: FontWeight.w600,
-                            color: isDark ? AppColors.darkTextSecondary : const Color(0xFF475569),
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                           ),
                         ),
                       ),
@@ -240,54 +281,87 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                   const SizedBox(height: 8),
 
+                  // E. Official Warranty Row
                   Row(
                     children: [
                       const Icon(
                         Icons.verified_rounded,
                         size: 14,
-                        color: Color(0xFF059669),
+                        color: Color(0xFF10B981),
                       ),
                       const SizedBox(width: 5),
-                      Flexible(
-                        child: Text(
-                          "Garansi Resmi 2 Tahun PT MDI",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF059669),
-                          ),
+                      Text(
+                        "Garansi Resmi 2 Tahun PT MDI",
+                        style: GoogleFonts.inter(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF059669),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 16),
-                          const SizedBox(width: 3),
-                          Text(
-                            "${p.rating.toStringAsFixed(1)} (${p.reviewsCount})",
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? Colors.white70 : const Color(0xFF334155),
-                            ),
-                          ),
-                        ],
                       ),
                     ],
                   ),
 
-                  // D. Capacity Model Selector (Only if product has variant models)
+                  // F. Official Function Box (Web Aligned: "FUNGSI MESIN")
+                  if (p.functionPreview.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurface : AppColors.surfaceVariant, // Zinc 100
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isDark ? AppColors.darkBorder : AppColors.border,
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.settings_suggest_rounded,
+                                size: 15,
+                                color: isDark ? Colors.white70 : AppColors.textMuted,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                "FUNGSI MESIN",
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 7),
+                          Text(
+                            p.functionPreview,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              height: 1.55,
+                              color: isDark ? const Color(0xFFD4D4D8) : const Color(0xFF3F3F46),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // G. Capacity Model Selector (Zinc Monochrome Pills)
                   if (hasModels) ...[
                     const SizedBox(height: 18),
                     Text(
                       "Pilihan Model Kapasitas",
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white70 : const Color(0xFF475569),
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                        color: isDark ? Colors.white : AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -302,23 +376,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             "${model.shortLabel} (${_formatCurrency(model.price)})",
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 11.5,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                               color: isSelected
-                                  ? Colors.white
-                                  : (isDark ? Colors.white70 : const Color(0xFF334155)),
+                                  ? (isDark ? AppColors.primary : Colors.white)
+                                  : (isDark ? AppColors.darkTextSecondary : AppColors.textSecondary),
                             ),
                           ),
                           selected: isSelected,
-                          selectedColor: brandColor,
-                          backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                          selectedColor: isDark ? Colors.white : AppColors.primary,
+                          backgroundColor: isDark ? AppColors.darkSurface : AppColors.surfaceVariant,
                           side: BorderSide(
                             color: isSelected
-                                ? brandColor
-                                : (isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+                                ? (isDark ? Colors.white : AppColors.primary)
+                                : (isDark ? AppColors.darkBorder : AppColors.border),
                             width: 1,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(999), // Pill shape
                           ),
                           onSelected: (_) {
                             setState(() {
@@ -330,205 +404,191 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: 18),
-                  Divider(
-                    height: 1,
-                    color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
-                  ),
-                  const SizedBox(height: 18),
-
-                  // E. Description Section
-                  Text(
-                    "Deskripsi Mesin",
-                    style: GoogleFonts.outfit(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    p.description,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
-                      height: 1.6,
-                    ),
-                  ),
-
-                  const SizedBox(height: 18),
-                  Divider(
-                    height: 1,
-                    color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
-                  ),
-                  const SizedBox(height: 18),
-
-                  // F. Single Authoritative Technical Specifications Table (Zero Redundancy!)
-                  Text(
-                    "Spesifikasi Teknis",
-                    style: GoogleFonts.outfit(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
-                    ),
+                  // H. Technical Specifications Section (Web Aligned)
+                  const SizedBox(height: 22),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.fact_check_outlined,
+                        size: 16,
+                        color: isDark ? Colors.white70 : AppColors.textPrimary,
+                      ),
+                      const SizedBox(width: 7),
+                      Text(
+                        "Spesifikasi Teknis",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.2,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
                   _buildCleanSpecsTable(activeSpec, isDark),
 
-                  const SizedBox(height: 18),
-                  Divider(
-                    height: 1,
-                    color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
-                  ),
-                  const SizedBox(height: 18),
-
-                  // G. Documents & Video Review (Clean, Linear Links - As Requested!)
-                  Text(
-                    "Dokumen & Media",
-                    style: GoogleFonts.outfit(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Manual Book Tile
-                  InkWell(
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => PdfPreviewModal(
-                          title: "Manual Book Teknis",
-                          subtitle: p.name,
-                          pdfType: "MANUAL_BOOK",
-                          data: {
-                            'productName': p.name,
-                            'productId': p.id,
-                            'capacity': activeSpec.kapasitas,
-                            'power': activeSpec.dayaListrik,
-                          },
+                  // I. Description & Advantages Section (Web Aligned)
+                  if (p.description.isNotEmpty) ...[
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.article_outlined,
+                          size: 16,
+                          color: isDark ? Colors.white70 : AppColors.textPrimary,
                         ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                        const SizedBox(width: 7),
+                        Text(
+                          "Deskripsi & Keunggulan",
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                            color: isDark ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF131A26) : const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(10),
+                        color: isDark ? AppColors.darkSurface : Colors.white,
+                        borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                          color: isDark ? AppColors.darkBorder : AppColors.border,
+                          width: 1,
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.picture_as_pdf_rounded,
-                            size: 20,
-                            color: Color(0xFFDC2626),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  p.manualBookPdfName,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                  ),
+                      child: Text(
+                        p.description,
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          height: 1.6,
+                          color: isDark ? const Color(0xFFD4D4D8) : const Color(0xFF3F3F46),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  // J. Documentation & Review (Brosur PDF & Video Demo)
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      // PDF Brochure Button
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => PdfPreviewModal(
+                                  title: "Brosur & Manual Book",
+                                  subtitle: p.name,
+                                  pdfType: "MANUAL_BOOK",
+                                  data: {
+                                    'productName': p.name,
+                                    'modelCode': p.modelCodeDisplay,
+                                    'capacity': activeSpec.kapasitas,
+                                  },
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  "Buku Manual & Panduan Perawatan (PDF)",
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 10.5,
-                                    color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
-                                  ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(999),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.darkSurface : AppColors.surfaceVariant,
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: isDark ? AppColors.darkBorder : AppColors.border,
+                                  width: 1,
                                 ),
-                              ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.picture_as_pdf_outlined, size: 16, color: Color(0xFFEF4444)),
+                                  const SizedBox(width: 6),
+                                  Flexible(
+                                    child: Text(
+                                      "Brosur PDF",
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark ? Colors.white : AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            size: 18,
-                            color: Color(0xFF94A3B8),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Video Demo Tile
-                  InkWell(
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => VideoPlayerModal(
-                          videoTitle: p.videoReviewTitle,
-                          duration: p.videoReviewDuration,
-                          imageUrl: p.imageUrl,
-                        ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF131A26) : const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.play_circle_fill_rounded,
-                            size: 20,
-                            color: AppColors.secondary,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  p.videoReviewTitle,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                  ),
+                      const SizedBox(width: 10),
+                      // Video Demo Button
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => VideoPlayerModal(
+                                  videoTitle: p.videoReviewTitle,
+                                  duration: p.videoReviewDuration,
+                                  imageUrl: p.imageUrl,
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  "Video Uji Operasional (${p.videoReviewDuration})",
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 10.5,
-                                    color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
-                                  ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(999),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.darkSurface : AppColors.surfaceVariant,
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: isDark ? AppColors.darkBorder : AppColors.border,
+                                  width: 1,
                                 ),
-                              ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.play_circle_outline_rounded,
+                                    size: 16,
+                                    color: isDark ? Colors.white : AppColors.primary,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Flexible(
+                                    child: Text(
+                                      "Video Demo",
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark ? Colors.white : AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            size: 18,
-                            color: Color(0xFF94A3B8),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
@@ -536,23 +596,30 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ],
       ),
 
-      // 3. Fixed Bottom Action Bar
+      // 3. Fixed Bottom Action Bar (Zinc Monochrome Inverted Pill CTA)
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : Colors.white,
           border: Border(
             top: BorderSide(
-              color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+              color: isDark ? AppColors.darkBorder : AppColors.border,
               width: 1,
             ),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -3),
+            ),
+          ],
         ),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
-                // Custom Order / RFQ
+                // Custom Order / RFQ (Outlined Pill)
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
@@ -590,25 +657,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       side: BorderSide(
-                        color: isDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                        color: isDark ? AppColors.darkBorder : AppColors.border,
+                        width: 1.2,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(999), // Pill Shape
                       ),
                     ),
                     child: Text(
-                      "Custom",
+                      "Konsultasi RFQ",
                       style: GoogleFonts.plusJakartaSans(
                         fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                        color: isDark ? Colors.white : AppColors.primary,
+                        fontSize: 12.5,
+                        color: isDark ? Colors.white : AppColors.textPrimary,
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
 
-                // Form PO Standar Button
+                // Form PO Standar Button (Solid Zinc 950 Inverted Pill)
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
@@ -644,20 +712,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: brandColor,
-                      foregroundColor: Colors.white,
+                      backgroundColor: isDark ? Colors.white : AppColors.primary, // Zinc 950
+                      foregroundColor: isDark ? AppColors.primary : Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(999), // Pill Shape
                       ),
                       elevation: 0,
                     ),
                     child: Text(
-                      "Pesan",
+                      "Pesan Mesin (PO)",
                       style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13.5,
-                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12.5,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ),
@@ -680,7 +748,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       {'label': 'Dimensi (P x L x T)', 'val': spec.dimensi},
       {'label': 'Bobot Mesin', 'val': spec.berat},
       {'label': 'Material Kontak Produk', 'val': spec.materialBoiler},
-      {'label': 'Kapasitas Hopper / Wadah', 'val': spec.kapasitasBoiler},
+      {'label': 'Kapasitas Wadah / Hopper', 'val': spec.kapasitasBoiler},
     ];
 
     // Omit '-' or empty values so irrelevant attributes never clutter the table
@@ -691,10 +759,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF131A26) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(10),
+        color: isDark ? AppColors.darkSurface : AppColors.surfaceVariant, // Zinc 100
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+          color: isDark ? AppColors.darkBorder : AppColors.border,
+          width: 1,
         ),
       ),
       child: Column(
@@ -702,15 +771,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           final it = items[idx];
           final isLast = idx == items.length - 1;
           return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             decoration: BoxDecoration(
               border: isLast
                   ? null
                   : Border(
                       bottom: BorderSide(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.05)
-                            : const Color(0xFFEDF2F7),
+                        color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.6),
+                        width: 0.8,
                       ),
                     ),
             ),
@@ -720,10 +788,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   flex: 4,
                   child: Text(
                     it['label']!,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.inter(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w500,
-                      color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
                     ),
                   ),
                 ),
@@ -736,7 +804,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      color: isDark ? Colors.white : AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -748,3 +816,4 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 }
+

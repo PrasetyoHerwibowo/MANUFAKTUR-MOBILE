@@ -573,11 +573,18 @@ class _WarrantyClaimScreenState extends State<WarrantyClaimScreen> {
               _buildInputLabel("Lampiran Bukti Foto / Dokumen Unit", isDark),
               InkWell(
                 onTap: () async {
-                  final name = await FilePickerHelper.pickFileName();
-                  setState(() {
-                    _uploadedPhotoName =
-                        name ?? 'foto_kerusakan_display_grinder.jpg';
-                  });
+                  final result = await FilePickerHelper.showUploadSourceSheet(
+                    context: context,
+                    title: "Unggah Foto / Dokumen Kerusakan",
+                    subtitle: "Ambil foto langsung kamera, pilih galeri, atau lampirkan dokumen",
+                    isDark: isDark,
+                    brandColor: const Color(0xFF047857),
+                  );
+                  if (result != null) {
+                    setState(() {
+                      _uploadedPhotoName = result.fileName;
+                    });
+                  }
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
@@ -904,14 +911,19 @@ class _WarrantyClaimScreenState extends State<WarrantyClaimScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  clm.claimNumber,
-                  style: GoogleFonts.outfit(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                Expanded(
+                  child: Text(
+                    clm.claimNumber,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),

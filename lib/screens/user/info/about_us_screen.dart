@@ -41,7 +41,7 @@ class AboutUsScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    "Pabrik Manufaktur Mesin Kopi Espresso & Roaster B2B",
+                    "Pabrik Manufaktur Mesin Kopi Espresso & Roaster",
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -74,7 +74,7 @@ class AboutUsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Kami adalah pabrikan manufaktur mesin kopi komersial pertama di Indonesia dengan standar kualitas presisi Eropa. Seluruh unit kami dirakit dengan material Stainless Steel 304 food-grade, dual boiler tembaga murni, serta kontrol suhu PID berteknologi tinggi untuk mendukung pertumbuhan ekosistem roastery & kafe B2B nasional.",
+                    "Kami adalah pabrikan manufaktur mesin kopi komersial pertama di Indonesia dengan standar kualitas presisi Eropa. Seluruh unit kami dirakit dengan material Stainless Steel 304 food-grade, dual boiler tembaga murni, serta kontrol suhu PID berteknologi tinggi untuk mendukung pertumbuhan ekosistem roastery & kafe nasional.",
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       height: 1.6,

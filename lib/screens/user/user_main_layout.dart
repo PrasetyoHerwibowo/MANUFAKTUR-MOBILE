@@ -4,11 +4,11 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../core/theme/app_colors.dart';
 import '../../widgets/app_notification_sheet.dart';
+import '../../widgets/auth_required_gate.dart';
 import 'home/home_screen.dart';
 import 'order/order_tracking_screen.dart';
 import 'service/booking_service_screen.dart';
 import 'profile/profile_screen.dart';
-import 'auth/login_screen.dart';
 
 class UserMainLayout extends StatefulWidget {
   const UserMainLayout({super.key});
@@ -18,15 +18,7 @@ class UserMainLayout extends StatefulWidget {
 }
 
 class _UserMainLayoutState extends State<UserMainLayout> {
-  int _currentIndex = 0;
   final TextEditingController _searchController = TextEditingController();
-
-  List<Widget> get _pages => const [
-    HomeScreen(),
-    OrderTrackingScreen(),
-    BookingServiceScreen(),
-    ProfileScreen(),
-  ];
 
   @override
   void dispose() {
@@ -34,11 +26,94 @@ class _UserMainLayoutState extends State<UserMainLayout> {
     super.dispose();
   }
 
+  Widget _buildBody(AppState appState) {
+    switch (appState.userTabIndex) {
+      case 0:
+        // Page 1: Home Produk selalu ditampilkan walaupun user belum login
+        return const HomeScreen();
+
+      case 1:
+        // Page 2: Pesanan Saya (Jangan ditampilkan jika belum login)
+        if (!appState.isLoggedIn) {
+          return const AuthRequiredGate(
+            title: "Pesanan Memerlukan Akun",
+            description:
+                "Masuk atau daftarkan akun resmi Anda untuk mengakses Purchase Order (PO), riwayat pembayaran DP 50%, serta timeline 7 tahap produksi mesin.",
+            icon: Icons.local_shipping_outlined,
+          );
+        }
+        return const OrderTrackingScreen();
+
+      case 2:
+        // Page 3: Servis & Garansi (Jangan ditampilkan jika belum login)
+        if (!appState.isLoggedIn) {
+          return const AuthRequiredGate(
+            title: "Layanan Servis & Garansi",
+            description:
+                "Untuk mengajukan jadwal kunjungan teknisi pabrik atau klaim garansi unit, Anda wajib login atau mendaftarkan akun terverifikasi.",
+            icon: Icons.build_outlined,
+          );
+        }
+        return const BookingServiceScreen();
+
+      case 3:
+        // Page 4: Profil Pengguna
+        if (!appState.isLoggedIn) {
+          return const AuthRequiredGate(
+            title: "Profil Pengguna",
+            description:
+                "Silakan masuk ke akun Anda untuk melihat rincian perusahaan, status verifikasi akun, dan pengaturan profil.",
+            icon: Icons.person_outline_rounded,
+          );
+        }
+        return const ProfileScreen();
+
+      default:
+        return const HomeScreen();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final isDark = appState.isDarkMode;
     final unreadCount = appState.unreadNotificationsCount;
+
+    // Tampilkan notifikasi real-time jika ada pembaruan status pesanan dari admin website
+    if (appState.latestStatusNotification != null) {
+      final notifText = appState.latestStatusNotification!;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && appState.latestStatusNotification != null) {
+          appState.clearLatestStatusNotification();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      notifText,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.primary,
+              duration: const Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      });
+    }
 
     // Keep search controller in sync with appState
     if (_searchController.text != appState.searchQuery) {
@@ -50,7 +125,7 @@ class _UserMainLayoutState extends State<UserMainLayout> {
 
     return Scaffold(
       appBar: _buildAppBar(context, appState, isDark, unreadCount),
-      body: _pages[_currentIndex],
+      body: _buildBody(appState),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: isDark ? AppColors.darkSurface : Colors.white,
@@ -69,19 +144,9 @@ class _UserMainLayoutState extends State<UserMainLayout> {
           ],
         ),
         child: BottomNavigationBar(
-          currentIndex: _currentIndex,
+          currentIndex: appState.userTabIndex,
           onTap: (index) {
-            if (index == 3) {
-              // Profil sementara mengarah ke halaman login sesuai permintaan user
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
-              return;
-            }
-            setState(() {
-              _currentIndex = index;
-            });
+            appState.setUserTabIndex(index);
           },
           type: BottomNavigationBarType.fixed,
           backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
@@ -125,8 +190,8 @@ class _UserMainLayoutState extends State<UserMainLayout> {
 
   PreferredSizeWidget _buildAppBar(
       BuildContext context, AppState appState, bool isDark, int unreadCount) {
-    if (_currentIndex == 0) {
-      // Modern Clean Top Bar (Search bar luas tanpa icon EIKO & tanpa tombol Admin)
+    if (appState.userTabIndex == 0) {
+      // Modern Clean Top Bar (Search bar luas)
       return AppBar(
         backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
         elevation: 0,
@@ -135,10 +200,10 @@ class _UserMainLayoutState extends State<UserMainLayout> {
         title: Container(
           height: 42,
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(12),
+            color: isDark ? AppColors.darkSurface : AppColors.surfaceVariant, // Zinc 100
+            borderRadius: BorderRadius.circular(999), // Web Pill Shape
             border: Border.all(
-              color: isDark ? Colors.white10 : AppColors.border,
+              color: isDark ? AppColors.darkBorder : AppColors.border,
               width: 1,
             ),
           ),
@@ -148,13 +213,13 @@ class _UserMainLayoutState extends State<UserMainLayout> {
               appState.setSearchQuery(val);
               setState(() {});
             },
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 12.5,
               color: isDark ? Colors.white : AppColors.textPrimary,
             ),
             decoration: InputDecoration(
               hintText: "Cari tipe mesin, roaster, grinder...",
-              hintStyle: GoogleFonts.plusJakartaSans(
+              hintStyle: GoogleFonts.inter(
                 fontSize: 12,
                 color: AppColors.textMuted,
               ),
@@ -163,7 +228,7 @@ class _UserMainLayoutState extends State<UserMainLayout> {
                 size: 20,
                 color: AppColors.textMuted,
               ),
-              prefixIconConstraints: const BoxConstraints(minWidth: 38),
+              prefixIconConstraints: const BoxConstraints(minWidth: 40),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear_rounded, size: 16),
@@ -258,7 +323,7 @@ class _UserMainLayoutState extends State<UserMainLayout> {
       // Clean header for secondary tabs
       final titles = [
         "Beranda",
-        "Pesanan Saya (Tracking & PO)",
+        "Pesanan Saya",
         "Layanan Servis & Garansi",
         "Profil Perusahaan",
       ];
@@ -268,7 +333,7 @@ class _UserMainLayoutState extends State<UserMainLayout> {
         elevation: 0,
         scrolledUnderElevation: 0,
         title: Text(
-          titles[_currentIndex],
+          titles[appState.userTabIndex],
           style: GoogleFonts.outfit(
             fontSize: 17,
             fontWeight: FontWeight.bold,

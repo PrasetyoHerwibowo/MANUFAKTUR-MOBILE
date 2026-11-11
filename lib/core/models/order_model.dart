@@ -1,11 +1,14 @@
 enum OrderStatus {
-  verifikasiDp, // Step 1: Verifikasi DP
+  verifikasiDp, // Step 1: Menunggu Verifikasi DP oleh Admin
+  dpDitolak, // Bukti DP Ditolak (Harap Unggah Ulang DP)
   persiapanBahan, // Step 2: Persiapan Bahan Baku
-  prosesProduksi, // Step 3: Proses Produksi/Assembly
+  prosesProduksi, // Step 3: Proses Produksi / Assembly
   qualityControl, // Step 4: Quality Control (QC)
-  menungguPelunasan, // Step 5: Menunggu Pelunasan (Sisa 50%)
-  pengirimanInstalasi, // Step 6: Pengiriman & Instalasi
-  afterSalesService, // Step 7: After-Sales Service (Layanan Purna Jual)
+  menungguPelunasan, // Step 5: Menunggu Pelunasan (QC selesai, customer wajib upload pelunasan)
+  verifikasiPelunasan, // Step 5b: Bukti Pelunasan Terupload (Menunggu Verifikasi/ACC Admin)
+  pelunasanDitolak, // Bukti Pelunasan Ditolak (Harap Unggah Ulang Pelunasan)
+  pengirimanInstalasi, // Step 6: Pengiriman & Instalasi (Admin ACC / Valid)
+  afterSalesService, // Step 7: After-Sales Service & Garansi Aktif
 }
 
 class OrderModel {
@@ -25,6 +28,7 @@ class OrderModel {
   OrderStatus status;
   String? dpProofPath; // path or mock indicator
   String? pelunasanProofPath;
+  String? rejectionReason;
   final String deliveryAddress;
   final String customNotes;
   final String serialNumber;
@@ -50,6 +54,7 @@ class OrderModel {
     required this.status,
     this.dpProofPath,
     this.pelunasanProofPath,
+    this.rejectionReason,
     required this.deliveryAddress,
     this.customNotes = '',
     this.serialNumber = 'SN-2026-MDI-8820',
@@ -62,6 +67,7 @@ class OrderModel {
   int get currentStageIndex {
     switch (status) {
       case OrderStatus.verifikasiDp:
+      case OrderStatus.dpDitolak:
         return 0;
       case OrderStatus.persiapanBahan:
         return 1;
@@ -70,6 +76,8 @@ class OrderModel {
       case OrderStatus.qualityControl:
         return 3;
       case OrderStatus.menungguPelunasan:
+      case OrderStatus.verifikasiPelunasan:
+      case OrderStatus.pelunasanDitolak:
         return 4;
       case OrderStatus.pengirimanInstalasi:
         return 5;
@@ -82,6 +90,8 @@ class OrderModel {
     switch (status) {
       case OrderStatus.verifikasiDp:
         return "Verifikasi DP";
+      case OrderStatus.dpDitolak:
+        return "Bukti DP Tidak Valid";
       case OrderStatus.persiapanBahan:
         return "Persiapan Bahan Baku";
       case OrderStatus.prosesProduksi:
@@ -90,10 +100,14 @@ class OrderModel {
         return "Quality Control (QC)";
       case OrderStatus.menungguPelunasan:
         return "Menunggu Pelunasan";
+      case OrderStatus.verifikasiPelunasan:
+        return "Verifikasi Pelunasan";
+      case OrderStatus.pelunasanDitolak:
+        return "Bukti Pelunasan Tidak Valid";
       case OrderStatus.pengirimanInstalasi:
         return "Pengiriman & Instalasi";
       case OrderStatus.afterSalesService:
-        return "After-Sales Service (Layanan Purna Jual)";
+        return "After-Sales Service (Garansi Aktif)";
     }
   }
 

@@ -77,7 +77,7 @@ class ProfileScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              "Mitra Terverifikasi B2B",
+                              "Akun Terverifikasi",
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
@@ -122,60 +122,7 @@ class ProfileScreen extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // Integrated Role Switcher Banner
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, Color(0xFF3D271D)],
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.admin_panel_settings,
-                    color: AppColors.secondary, size: 36),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Panel Admin Dashboard Web",
-                        style: GoogleFonts.outfit(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        "Kelola statistik PO, verifikasi DP, & update status produksi.",
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white70,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    appState.toggleAppMode();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.secondary,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
-                  child: const Text("Beralih Admin"),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          _buildSectionTitle("Informasi & Transaksi B2B"),
+          _buildSectionTitle("Informasi & Transaksi"),
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -225,7 +172,7 @@ class ProfileScreen extends StatelessWidget {
                 const Divider(height: 1),
                 _buildMenuItem(
                   icon: Icons.headset_mic_outlined,
-                  title: "Kontak WhatsApp Admin Engineer",
+                  title: "Kontak WhatsApp Tim Support",
                   onTap: () {
                     Navigator.push(
                       context,
@@ -261,34 +208,6 @@ class ProfileScreen extends StatelessWidget {
                     },
                   ),
                 ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.cloud_sync, color: Colors.blue),
-                  title: Text(
-                    "Koneksi REST-API Laravel Sanctum",
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: appState.isDarkMode ? Colors.white : AppColors.textPrimary,
-                    ),
-                  ),
-                  subtitle: const Text(
-                    "Database Supabase PostgreSQL (C:\\xampp\\htdocs\\MANUFAKTUR)",
-                    style: TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.green),
-                    ),
-                    child: const Text(
-                      "TERHUBUNG",
-                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.green),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -305,7 +224,7 @@ class ProfileScreen extends StatelessWidget {
               },
               icon: const Icon(Icons.logout, color: AppColors.error),
               label: Text(
-                "KELUAR DARI AKUN B2B",
+                "KELUAR DARI AKUN",
                 style: GoogleFonts.plusJakartaSans(
                   color: AppColors.error,
                   fontWeight: FontWeight.bold,

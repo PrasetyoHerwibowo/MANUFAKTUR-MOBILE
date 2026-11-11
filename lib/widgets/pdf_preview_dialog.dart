@@ -104,74 +104,70 @@ class PdfPreviewModal extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // PDF Header Bar
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "PT MANUFACTUR DYNAMIC INDONESIA",
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.bold,
-                                      color: isDark ? Colors.white : AppColors.primary,
-                                      letterSpacing: 0.4,
+                        // PDF Header Bar (Hanya untuk Faktur / Quotation; Manual Book langsung mulai dari Panduan Operasional)
+                        if (pdfType != 'MANUAL_BOOK') ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "PT MANUFACTUR DYNAMIC INDONESIA",
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? Colors.white : AppColors.primary,
+                                        letterSpacing: 0.4,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    "Fabrikasi Mesin Industri Pengolahan Kopi & Kakao",
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 9.5,
-                                      color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      "Fabrikasi Mesin Industri Pengolahan Kopi & Kakao",
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 9.5,
+                                        color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    "Hotline Teknis: +62 812-3456-7890 • www.manufacturdynamic.com",
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 8.5,
-                                      color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
+                                    Text(
+                                      "Hotline Teknis: +62 812-3456-7890 • www.manufacturdynamic.com",
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 8.5,
+                                        color: isDark ? Colors.white38 : const Color(0xFF94A3B8),
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: pdfType == 'MANUAL_BOOK'
-                                    ? const Color(0xFFDC2626).withValues(alpha: isDark ? 0.25 : 0.1)
-                                    : AppColors.secondary.withValues(alpha: isDark ? 0.25 : 0.15),
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(
-                                  color: pdfType == 'MANUAL_BOOK'
-                                      ? const Color(0xFFDC2626).withValues(alpha: 0.4)
-                                      : AppColors.secondary.withValues(alpha: 0.4),
+                                  ],
                                 ),
                               ),
-                              child: Text(
-                                pdfType == 'MANUAL_BOOK' ? "MANUAL SOP" : pdfType,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: pdfType == 'MANUAL_BOOK'
-                                      ? const Color(0xFFEF4444)
-                                      : AppColors.secondary,
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.secondary.withValues(alpha: isDark ? 0.25 : 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: AppColors.secondary.withValues(alpha: 0.4),
+                                  ),
+                                ),
+                                child: Text(
+                                  pdfType,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.secondary,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        Divider(
-                          height: 22,
-                          thickness: 1,
-                          color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
-                        ),
+                            ],
+                          ),
+                          Divider(
+                            height: 22,
+                            thickness: 1,
+                            color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                          ),
+                        ],
 
                         if (pdfType == 'INVOICE' || pdfType == 'FAKTUR_PAJAK') ...[
                           _buildInvoiceContent(isDark),

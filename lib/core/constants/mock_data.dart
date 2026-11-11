@@ -12,6 +12,8 @@ class MockData {
         ProductModel(
           id: 'PROD-ROAST-01',
           name: 'MicroRoast 100g Lab Sample Roaster',
+          modelCode: 'MDI-RS01',
+          function: 'Mesin sangrai sampel lab untuk kalibrasi profil roasting presisi skala mikro.',
           category: 'Roaster Kopi',
           commodity: 'Kopi',
           processStage: 'Hilir',
@@ -37,11 +39,13 @@ class MockData {
           videoReviewTitle: 'Tutorial Kalibrasi Sample Kopi MicroRoast 100g',
           videoReviewDuration: '06:45',
           isCustomizable: false,
-          stockStatus: 'Pre-Order 14 Hari',
+          stockStatus: 'Pre-Order 30 Hari',
         ),
         ProductModel(
           id: 'PROD-ROAST-04',
           name: 'ProRoast 1 kg / Batch Shop Roaster',
+          modelCode: 'MDI-RS04',
+          function: 'Shop roaster kapasitas 1 kg/batch untuk specialty coffee shop dan micro-roastery.',
           category: 'Roaster Kopi',
           commodity: 'Kopi',
           processStage: 'Hilir',
@@ -67,11 +71,13 @@ class MockData {
           videoReviewTitle: 'Demo Roasting 1kg Batch Profil Specialty Kopi',
           videoReviewDuration: '12:40',
           isCustomizable: true,
-          stockStatus: 'Pre-Order 14 Hari',
+          stockStatus: 'Pre-Order 30 Hari',
         ),
         ProductModel(
           id: 'PROD-ROAST-08',
           name: 'Artisan Series 5 kg Double Wall Roaster',
+          modelCode: 'MDI-RS50',
+          function: 'Mesin roasting kapasitas komersial dengan double wall drum untuk roastery berkembang.',
           category: 'Roaster Kopi',
           commodity: 'Kopi',
           processStage: 'Hilir',
@@ -128,6 +134,8 @@ class MockData {
         ProductModel(
           id: 'PROD-ROAST-16',
           name: 'GigantRoast 80 kg Full Industrial Plant Roaster',
+          modelCode: 'MDI-RS80',
+          function: 'Pabrik sangrai industri berat kapasitas 80 kg/batch dengan modulasi burner otomatis dan afterburner.',
           category: 'Roaster Kopi',
           commodity: 'Kopi',
           processStage: 'Hilir',
@@ -162,6 +170,8 @@ class MockData {
         ProductModel(
           id: 'PROD-HKP-01',
           name: 'Mesin Pulper Kopi Basah Single Roll',
+          modelCode: 'MDI-PL200',
+          function: 'Memisahkan biji kopi dari kulit buah segar pascapanen sehingga proses fermentasi seragam.',
           category: 'Mesin Kopi',
           commodity: 'Kopi',
           processStage: 'Hulu',
@@ -187,11 +197,13 @@ class MockData {
           videoReviewTitle: 'Uji Kupas Buah Kopi Basah dengan Pulper Single Roll',
           videoReviewDuration: '07:30',
           isCustomizable: false,
-          stockStatus: 'Pre-Order 14 Hari',
+          stockStatus: 'Pre-Order 30 Hari',
         ),
         ProductModel(
           id: 'PROD-HKP-05',
           name: 'Mesin Huller Kopi Kering Standar UMKM',
+          modelCode: 'MDI-HL150',
+          function: 'Mengupas kulit tanduk dan kulit ari kering dengan efisiensi tinggi serta tingkat patah minimal.',
           category: 'Mesin Kopi',
           commodity: 'Kopi',
           processStage: 'Hulu',
@@ -217,11 +229,13 @@ class MockData {
           videoReviewTitle: 'Proses Kupas Kulit Tanduk Kopi Kering dengan Huller UMKM',
           videoReviewDuration: '09:15',
           isCustomizable: false,
-          stockStatus: 'Pre-Order 14 Hari',
+          stockStatus: 'Pre-Order 30 Hari',
         ),
         ProductModel(
           id: 'PROD-HKP-16',
           name: 'Mesin Espresso Komersial 3-Group Multi Boiler Barista Pro',
+          modelCode: 'MDI-ESP03',
+          function: 'Mesin espresso komersial 3-group dengan multi boiler independen dan dual PID presisi tinggi.',
           category: 'Mesin Kopi',
           commodity: 'Kopi',
           processStage: 'Hilir',
@@ -247,7 +261,7 @@ class MockData {
           videoReviewTitle: 'Kalibrasi Presisi Suhu & Pressure Profiling Espresso 3-Group',
           videoReviewDuration: '16:45',
           isCustomizable: true,
-          stockStatus: 'Pre-Order 14 Hari',
+          stockStatus: 'Pre-Order 30 Hari',
         ),
 
         // =========================================================================
@@ -256,6 +270,8 @@ class MockData {
         ProductModel(
           id: 'PROD-KKO-01',
           name: 'Mesin Pemecah Buah Kakao & Pemisah Biji (Pod Breaker)',
+          modelCode: 'MDI-FM500',
+          function: 'Membelah buah kakao matang dan memisahkan biji basah dari kulit secara mekanis higienis.',
           category: 'Mesin Kakao',
           commodity: 'Kakao',
           processStage: 'Hulu',
@@ -281,11 +297,13 @@ class MockData {
           videoReviewTitle: 'Efisiensi Pemecahan Buah Kakao dengan Pod Breaker',
           videoReviewDuration: '08:50',
           isCustomizable: false,
-          stockStatus: 'Pre-Order 14 Hari',
+          stockStatus: 'Pre-Order 30 Hari',
         ),
         ProductModel(
           id: 'PROD-KKO-04',
           name: 'Mesin Sangrai Biji Kakao Rotary Roaster',
+          modelCode: 'MDI-DR1000',
+          function: 'Menyangrai biji kakao dengan drum putar stainless 304 terkontrol untuk aroma cokelat optimal.',
           category: 'Mesin Kakao',
           commodity: 'Kakao',
           processStage: 'Hilir',
@@ -316,6 +334,8 @@ class MockData {
         ProductModel(
           id: 'PROD-KKO-07',
           name: 'Mesin Penghalus Bubuk Kakao & Pulverizer Disk Mill',
+          modelCode: 'MDI-GR30',
+          function: 'Menggiling bungkil kakao menjadi bubuk cokelat ekstra halus hingga 200 mesh dengan sistem pendingin.',
           category: 'Mesin Kakao',
           commodity: 'Kakao',
           processStage: 'Hilir',
@@ -505,50 +525,9 @@ class MockData {
         ),
       ];
 
-  static List<ServiceTicketModel> get initialServiceTickets => [
-        ServiceTicketModel(
-          id: 'TCK-201',
-          ticketNumber: 'SRV-2026-088',
-          companyName: 'PT Kopi Nusantara Jaya',
-          serialNumber: 'SN-2024-CRAFT-092',
-          machineModel: 'Artisan Espresso Craft Pro 2G',
-          type: ServiceTicketType.maintenanceRutin,
-          preferredDate: '10 Okt 2026',
-          preferredTime: '10:00 WIB',
-          address: 'Jl. Sudirman No. 45, Jakarta Selatan',
-          issueDescription: 'Maintenance rutin 6 bulanan, penggantian gasket group head, descaling boiler.',
-          status: TicketStatus.dijadwalkan,
-          technicianName: 'Teknisi Slamet R.',
-          technicianPhone: '0813-1122-3344',
-        ),
-        ServiceTicketModel(
-          id: 'TCK-202',
-          ticketNumber: 'SRV-2026-091',
-          companyName: 'Kopi Kenangan Indah',
-          serialNumber: 'SN-2025-AROMA-014',
-          machineModel: 'AromaMax Commercial 3G Heavy Duty',
-          type: ServiceTicketType.kalibrasiBoiler,
-          preferredDate: '08 Okt 2026',
-          preferredTime: '14:00 WIB',
-          address: 'Jl. Sunset Road No. 88, Kuta, Bali',
-          issueDescription: 'Tekanan steam wand menurun dari 1.5 Bar ke 0.9 Bar. Perlu cek solenoid valve.',
-          status: TicketStatus.dalamPengerjaan,
-          technicianName: 'Teknisi Made Dewa',
-          technicianPhone: '0812-9988-7766',
-        ),
-      ];
+  static List<ServiceTicketModel> get initialServiceTickets => [];
 
-  static List<WarrantyClaimModel> get initialWarrantyClaims => [
-        WarrantyClaimModel(
-          id: 'WMT-301',
-          claimNumber: 'CLM-2026-012',
-          serialNumber: 'SN-2025-TITAN-881',
-          purchaseDate: '15 Jan 2026',
-          damageDescription: 'Sensor display sentuh grinder TitanGrind kadang tidak merespon saat suhu ruang tinggi.',
-          photoPath: 'foto_garansi_display.jpg',
-          status: 'Disetujui - Sparepart Display Replacement Terkirim',
-        )
-      ];
+  static List<WarrantyClaimModel> get initialWarrantyClaims => [];
 
   static List<SparepartModel> get initialSpareparts => [
         SparepartModel(
