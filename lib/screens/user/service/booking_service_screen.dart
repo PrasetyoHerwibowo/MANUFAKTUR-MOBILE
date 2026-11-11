@@ -8,7 +8,21 @@ import 'warranty_claim_screen.dart';
 
 class BookingServiceScreen extends StatefulWidget {
   final int initialTab;
-  const BookingServiceScreen({super.key, this.initialTab = 0});
+  final String? initialSerialNumber;
+  final String? initialMachineModel;
+  final String? initialAddress;
+  final String? initialOrderId;
+  final String? initialPurchaseDate;
+
+  const BookingServiceScreen({
+    super.key,
+    this.initialTab = 0,
+    this.initialSerialNumber,
+    this.initialMachineModel,
+    this.initialAddress,
+    this.initialOrderId,
+    this.initialPurchaseDate,
+  });
 
   @override
   State<BookingServiceScreen> createState() => _BookingServiceScreenState();
@@ -78,9 +92,19 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
   @override
   void initState() {
     super.initState();
-    _currentTab = widget.initialTab.clamp(0, 1);
+    if (widget.initialSerialNumber != null && widget.initialSerialNumber!.isNotEmpty) {
+      _serialNumberController.text = widget.initialSerialNumber!;
+    }
+    if (widget.initialMachineModel != null && widget.initialMachineModel!.isNotEmpty) {
+      _machineModelController.text = widget.initialMachineModel!;
+    }
+    if (widget.initialAddress != null && widget.initialAddress!.isNotEmpty) {
+      _addressController.text = widget.initialAddress!;
+    }
+
+    _currentTab = widget.initialTab.clamp(0, 2);
     _mainTabController = TabController(
-      length: 2,
+      length: 3,
       vsync: this,
       initialIndex: _currentTab,
     );
@@ -110,6 +134,8 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
   Color _statusBgColor(TicketStatus status, bool isDark) {
     if (isDark) {
       switch (status) {
+        case TicketStatus.menungguVerifikasi:
+          return const Color(0xFF332A15);
         case TicketStatus.dijadwalkan:
           return const Color(0xFF1E293B);
         case TicketStatus.teknisiOtw:
@@ -117,9 +143,13 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
           return const Color(0xFF332A15);
         case TicketStatus.selesai:
           return const Color(0xFF14332A);
+        case TicketStatus.dibatalkan:
+          return const Color(0xFF3B1E1E);
       }
     } else {
       switch (status) {
+        case TicketStatus.menungguVerifikasi:
+          return const Color(0xFFFEF3C7);
         case TicketStatus.dijadwalkan:
           return const Color(0xFFEFF6FF); // Pastel blue
         case TicketStatus.teknisiOtw:
@@ -127,6 +157,8 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
           return const Color(0xFFFEF3C7); // Pastel amber
         case TicketStatus.selesai:
           return const Color(0xFFECFDF5); // Pastel mint
+        case TicketStatus.dibatalkan:
+          return const Color(0xFFFEE2E2);
       }
     }
   }
@@ -134,6 +166,8 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
   Color _statusTextColor(TicketStatus status, bool isDark) {
     if (isDark) {
       switch (status) {
+        case TicketStatus.menungguVerifikasi:
+          return const Color(0xFFFDE047);
         case TicketStatus.dijadwalkan:
           return const Color(0xFF93C5FD);
         case TicketStatus.teknisiOtw:
@@ -141,9 +175,13 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
           return const Color(0xFFFDE047);
         case TicketStatus.selesai:
           return const Color(0xFF86EFAC);
+        case TicketStatus.dibatalkan:
+          return const Color(0xFFFCA5A5);
       }
     } else {
       switch (status) {
+        case TicketStatus.menungguVerifikasi:
+          return const Color(0xFFB45309);
         case TicketStatus.dijadwalkan:
           return const Color(0xFF1D4ED8);
         case TicketStatus.teknisiOtw:
@@ -151,12 +189,16 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
           return const Color(0xFFB45309);
         case TicketStatus.selesai:
           return const Color(0xFF047857);
+        case TicketStatus.dibatalkan:
+          return const Color(0xFFB91C1C);
       }
     }
   }
 
   IconData _statusIcon(TicketStatus status) {
     switch (status) {
+      case TicketStatus.menungguVerifikasi:
+        return Icons.hourglass_top_rounded;
       case TicketStatus.dijadwalkan:
         return Icons.calendar_today_rounded;
       case TicketStatus.teknisiOtw:
@@ -164,6 +206,8 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
         return Icons.pending_actions_rounded;
       case TicketStatus.selesai:
         return Icons.check_circle_rounded;
+      case TicketStatus.dibatalkan:
+        return Icons.cancel_outlined;
     }
   }
 
@@ -209,7 +253,14 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
                 controller: _mainTabController,
                 children: [
                   _buildBookingServisTab(context, appState, isDark),
-                  const WarrantyClaimScreen(),
+                  WarrantyClaimScreen(
+                    initialSerialNumber: widget.initialSerialNumber,
+                    initialMachineModel: widget.initialMachineModel,
+                    initialPurchaseDate: widget.initialPurchaseDate,
+                    initialOrderId: widget.initialOrderId,
+                    initialAddress: widget.initialAddress,
+                  ),
+                  _buildWarrantyVisitsTab(context, appState, isDark),
                 ],
               ),
             ),
@@ -254,9 +305,18 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
             Expanded(
               child: _buildTopTabButton(
                 index: 1,
-                icon: Icons.verified_user_outlined,
-                activeIcon: Icons.verified_user_rounded,
+                icon: Icons.shield_outlined,
+                activeIcon: Icons.shield_rounded,
                 label: "Klaim Garansi",
+                isDark: isDark,
+              ),
+            ),
+            Expanded(
+              child: _buildTopTabButton(
+                index: 2,
+                icon: Icons.calendar_month_outlined,
+                activeIcon: Icons.calendar_month_rounded,
+                label: "Jadwal Garansi",
                 isDark: isDark,
               ),
             ),
@@ -627,7 +687,7 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
 
               const SizedBox(height: 12),
 
-              _buildInputLabel("Model / Tipe Mesin Kopi", isDark),
+              _buildInputLabel("Model / Tipe Mesin", isDark),
               TextField(
                 controller: _machineModelController,
                 style: TextStyle(
@@ -860,6 +920,7 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
               appState.createServiceTicket(
                 serialNumber: _serialNumberController.text.trim(),
                 machineModel: _machineModelController.text.trim(),
+                orderId: widget.initialOrderId,
                 type: _selectedServiceType,
                 preferredDate: _dateController.text.trim(),
                 preferredTime: _timeController.text.trim(),
@@ -1254,7 +1315,7 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
             ),
             const SizedBox(height: 4),
             Text(
-              "Jadwalkan kunjungan teknisi untuk pemeliharaan mesin kopi Anda.",
+              "Jadwalkan kunjungan teknisi untuk pemeliharaan unit mesin Anda.",
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 12,
@@ -1810,6 +1871,247 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
           fontSize: 11.5,
           color: isDark ? Colors.white70 : const Color(0xFF334155),
         ),
+      ),
+    );
+  }
+
+  /// Tab ke-3: Menampilkan Penjadwalan Kunjungan Perbaikan Teknisi untuk Klaim Garansi yang telah diverifikasi Admin Pabrik
+  Widget _buildWarrantyVisitsTab(BuildContext context, AppState appState, bool isDark) {
+    final visits = appState.scheduledWarrantyVisits;
+
+    if (visits.isEmpty) {
+      return Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 76,
+                height: 76,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.calendar_month_rounded,
+                  size: 38,
+                  color: Color(0xFF2563EB),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                "Belum Ada Jadwal Kunjungan Garansi",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Setelah pengajuan klaim garansi Anda diverifikasi valid oleh Tim Engineering Pabrik, jadwal kedatangan teknisi dan nomor kontak akan otomatis ditampilkan di sini.",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _currentTab = 1;
+                    _mainTabController.animateTo(1);
+                  });
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF047857),
+                  side: const BorderSide(color: Color(0xFF047857), width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+                icon: const Icon(Icons.shield_outlined, size: 16),
+                label: const Text(
+                  "Ajukan Klaim Garansi Baru",
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        await appState.loadWarrantyClaimsFromBackend();
+      },
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        itemCount: visits.length,
+        itemBuilder: (context, index) {
+          final item = visits[index];
+          return Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.darkSurface : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Badge
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2563EB).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today_rounded, size: 12, color: Color(0xFF2563EB)),
+                          const SizedBox(width: 5),
+                          Text(
+                            item.friendlyStatus,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF2563EB),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      item.claimNumber,
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Unit Mesin
+                Text(
+                  item.machineModel,
+                  style: GoogleFonts.outfit(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "No. Seri: ${item.serialNumber}",
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF047857),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Jadwal & Teknisi Box
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.access_time_rounded, size: 15, color: Color(0xFF2563EB)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              "Kunjungan: ${item.scheduledVisitDate ?? '-'} · ${item.scheduledVisitTime ?? '10:00 WIB'}",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.person_rounded, size: 15, color: Color(0xFF047857)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              "Teknisi: ${item.technicianName ?? 'Tim Teknisi Garansi Pabrik'}${item.technicianPhone != null && item.technicianPhone!.isNotEmpty ? ' (${item.technicianPhone})' : ''}",
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: isDark ? Colors.white70 : const Color(0xFF475569),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (item.visitAddress != null && item.visitAddress!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.location_on_rounded, size: 15, color: Color(0xFFE11D48)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                item.visitAddress!,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                if (item.responseNotes != null && item.responseNotes!.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    "Catatan Pabrik: ${item.responseNotes}",
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontStyle: FontStyle.italic,
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
       ),
     );
   }

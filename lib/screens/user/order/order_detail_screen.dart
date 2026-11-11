@@ -12,7 +12,6 @@ import '../../../core/models/product_model.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/pdf_preview_dialog.dart';
 import '../service/booking_service_screen.dart';
-import '../service/warranty_claim_screen.dart';
 import '../info/contact_whatsapp_screen.dart';
 
 class OrderDetailScreen extends StatefulWidget {
@@ -857,7 +856,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const BookingServiceScreen(),
+                                  builder: (context) => BookingServiceScreen(
+                                    initialTab: 0,
+                                    initialSerialNumber: o.serialNumber,
+                                    initialMachineModel: o.productName,
+                                    initialAddress: o.deliveryAddress,
+                                    initialOrderId: o.id,
+                                    initialPurchaseDate: o.orderDate,
+                                  ),
                                 ),
                               );
                             },
@@ -877,13 +883,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const WarrantyClaimScreen(asStandalonePage: true),
-                                ),
-                              );
+                              _handleWarrantyClaimClick(context, o, isDark);
                             },
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF047857),
@@ -1079,6 +1079,228 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         ),
       ),
     );
+  }
+
+    /// Logika verifikasi status garansi otomatis saat customer mengklik tombol Klaim Garansi
+  void _handleWarrantyClaimClick(BuildContext context, OrderModel o, bool isDark) {
+    if (o.isWarrantyActive) {
+      // 1. Status: MASIH DALAM MASA GARANSI RESMI AKTIF
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (ctx) {
+          return Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFECFDF5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.verified_user_rounded, color: Color(0xFF047857), size: 24),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF047857).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              "STATUS: MASIH DALAM GARANSI RESMI",
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF047857),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            o.productName,
+                            style: GoogleFonts.outfit(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Nomor Seri Mesin:", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          Text(o.serialNumber, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Masa Garansi Pabrik:", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          Text("${o.warrantyPeriodMonths} Bulan Resmi", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF047857))),
+                        ],
+                      ),
+                      if (o.warrantyExpiryDate != null) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Berlaku Hingga:", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                            Text(o.warrantyExpiryDate!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BookingServiceScreen(
+                            initialTab: 1, // Tab Klaim Garansi
+                            initialSerialNumber: o.serialNumber,
+                            initialMachineModel: o.productName,
+                            initialAddress: o.deliveryAddress,
+                            initialOrderId: o.id,
+                            initialPurchaseDate: o.orderDate,
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF047857),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                    label: const Text(
+                      "Lanjut Klaim Garansi",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    } else {
+      // 2. Status: SUDAH TIDAK DALAM MASA GARANSI -> Tampilkan dialog peringatan & opsi beralih ke Booking Servis
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706), size: 24),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  "Masa Garansi Berakhir",
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            "Pesanan unit ${o.productName} (No. Seri: ${o.serialNumber}) sudah tidak dalam masa garansi resmi pabrik.\n\nApakah Anda ingin melanjutkan ke Booking Servis berbayar untuk perawatan mesin ini?",
+            style: TextStyle(
+              fontSize: 13,
+              color: isDark ? Colors.white70 : const Color(0xFF475569),
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Batal", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BookingServiceScreen(
+                      initialTab: 0, // Beralih ke Booking Servis
+                      initialSerialNumber: o.serialNumber,
+                      initialMachineModel: o.productName,
+                      initialAddress: o.deliveryAddress,
+                      initialOrderId: o.id,
+                      initialPurchaseDate: o.orderDate,
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF047857),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text("Lanjut ke Booking Servis", style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   Widget _buildSectionTitle(String title, bool isDark) {

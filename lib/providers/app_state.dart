@@ -53,6 +53,8 @@ class AppState extends ChangeNotifier {
           notifyListeners();
 
           await loadOrdersFromBackend();
+          await loadServiceBookingsFromBackend();
+          await loadWarrantyClaimsFromBackend();
           _startOrderPolling();
 
           // Validasi sesi aktif di server Laravel secara background
@@ -85,6 +87,8 @@ class AppState extends ChangeNotifier {
         if (_catalogPollCounter >= 2) {
           _catalogPollCounter = 0;
           await loadProductsFromBackend(silent: true);
+          await loadServiceBookingsFromBackend();
+          await loadWarrantyClaimsFromBackend();
         }
       }
     });
@@ -800,6 +804,9 @@ class AppState extends ChangeNotifier {
             deliveryAddress: item['delivery_address']?.toString() ?? '',
             customNotes: item['custom_notes']?.toString() ?? '',
             serialNumber: item['serial_number']?.toString() ?? 'SN-2026-MDI-8820',
+            warrantyPeriodMonths: item['warranty_period_months'] is int ? item['warranty_period_months'] : 24,
+            warrantyExpiryDate: item['warranty_expiry_date']?.toString(),
+            isWarrantyActive: item['is_warranty_active'] != false,
           ));
         }
 
@@ -996,22 +1003,129 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Service Tickets
+  // ==========================================
+  // SERVICE TICKETS & BACKEND SYNC
+  // ==========================================
   final List<ServiceTicketModel> _serviceTickets = [];
   List<ServiceTicketModel> get serviceTickets => _serviceTickets;
 
-  void createServiceTicket({
+  Future<void> loadServiceBookingsFromBackend() async {
+    try {
+      final list = await ApiService.fetchServiceBookings();
+      if (list != null) {
+        final parsed = <ServiceTicketModel>[];
+        for (final item in list) {
+          TicketStatus parsedStatus = TicketStatus.menungguVerifikasi;
+          final statusStr = item['status']?.toString().toLowerCase() ?? '';
+          if (statusStr.contains('menunggu')) {
+            parsedStatus = TicketStatus.menungguVerifikasi;
+          } else if (statusStr.contains('otw')) {
+            parsedStatus = TicketStatus.teknisiOtw;
+          } else if (statusStr.contains('pengerjaan') || statusStr.contains('proses')) {
+            parsedStatus = TicketStatus.dalamPengerjaan;
+          } else if (statusStr.contains('selesai')) {
+            parsedStatus = TicketStatus.selesai;
+          } else if (statusStr.contains('batal')) {
+            parsedStatus = TicketStatus.dibatalkan;
+          } else {
+            parsedStatus = TicketStatus.dijadwalkan;
+          }
+
+          ServiceTicketType parsedType = ServiceTicketType.maintenanceRutin;
+          final typeStr = item['service_type']?.toString().toLowerCase() ?? '';
+          if (typeStr.contains('kalibrasi')) {
+            parsedType = ServiceTicketType.kalibrasiBoiler;
+          } else if (typeStr.contains('repair') || typeStr.contains('perbaikan')) {
+            parsedType = ServiceTicketType.repairMesin;
+          } else if (typeStr.contains('emergency')) {
+            parsedType = ServiceTicketType.emergencyService;
+          }
+
+          parsed.add(ServiceTicketModel(
+            id: item['id']?.toString() ?? '',
+            orderId: item['order_id']?.toString(),
+            ticketNumber: item['ticket_number']?.toString() ?? 'SRV-2026',
+            companyName: item['company_name']?.toString() ?? 'PT Kopi Nusantara Jaya',
+            serialNumber: item['serial_number']?.toString() ?? '',
+            machineModel: item['machine_model']?.toString() ?? 'Mesin Industri',
+            type: parsedType,
+            preferredDate: item['preferred_date']?.toString() ?? '-',
+            preferredTime: item['preferred_time']?.toString() ?? '10:00 WIB',
+            address: item['address']?.toString() ?? '',
+            issueDescription: item['issue_description']?.toString() ?? '',
+            status: parsedStatus,
+            technicianName: item['technician_name']?.toString() ?? 'Teknisi Senior Pabrik',
+            technicianPhone: item['technician_phone']?.toString() ?? '0812-3344-5566',
+            adminNotes: item['admin_notes']?.toString(),
+            createdAt: item['created_at']?.toString(),
+          ));
+        }
+
+        _serviceTickets.clear();
+        _serviceTickets.addAll(parsed);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('loadServiceBookingsFromBackend error: $e');
+    }
+  }
+
+  Future<bool> createServiceTicket({
     required String serialNumber,
     required String machineModel,
+    String? orderId,
     required ServiceTicketType type,
     required String preferredDate,
     required String preferredTime,
     required String address,
     required String issueDescription,
-  }) {
+  }) async {
+    String typeStr = 'maintenance_rutin';
+    switch (type) {
+      case ServiceTicketType.maintenanceRutin:
+        typeStr = 'maintenance_rutin';
+        break;
+      case ServiceTicketType.kalibrasiBoiler:
+        typeStr = 'kalibrasi';
+        break;
+      case ServiceTicketType.repairMesin:
+        typeStr = 'repair';
+        break;
+      case ServiceTicketType.emergencyService:
+        typeStr = 'emergency';
+        break;
+    }
+
+    try {
+      final res = await ApiService.bookingService(
+        serialNumber: serialNumber,
+        machineModel: machineModel,
+        orderId: orderId,
+        serviceType: typeStr,
+        scheduledDate: preferredDate,
+        scheduledTime: preferredTime,
+        address: address,
+        issueDescription: issueDescription,
+        companyName: _companyName,
+      );
+
+      if (res != null && res['success'] == true) {
+        addNotification(
+          'Booking Servis Terkirim',
+          'Permintaan booking servis untuk unit $serialNumber berhasil dikirim ke Admin Pabrik.',
+        );
+        await loadServiceBookingsFromBackend();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('createServiceTicket error: $e');
+    }
+
+    // Fallback optimis lokal jika jaringan server lambat
     final newTck = 'SRV-2026-0${_serviceTickets.length + 95}';
     final newTicket = ServiceTicketModel(
       id: 'TCK-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+      orderId: orderId,
       ticketNumber: newTck,
       companyName: _companyName.isNotEmpty ? _companyName : 'PT Kopi Nusantara Jaya',
       serialNumber: serialNumber,
@@ -1021,17 +1135,17 @@ class AppState extends ChangeNotifier {
       preferredTime: preferredTime,
       address: address,
       issueDescription: issueDescription,
-      status: TicketStatus.dijadwalkan,
-      technicianName: 'Teknisi Senior Pabrik',
+      status: TicketStatus.menungguVerifikasi,
+      technicianName: 'Tim Teknisi Pabrik',
       technicianPhone: '0812-3344-5566',
     );
-
     _serviceTickets.insert(0, newTicket);
     addNotification(
       'Booking Servis Berhasil',
       'Tiket $newTck berhasil dibuat untuk tanggal $preferredDate.',
     );
     notifyListeners();
+    return true;
   }
 
   void updateTicketStatus(String ticketId, TicketStatus newStatus, String technician) {
@@ -1049,32 +1163,118 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  // Warranty Claims
+  // ==========================================
+  // WARRANTY CLAIMS & BACKEND SYNC
+  // ==========================================
   final List<WarrantyClaimModel> _warrantyClaims = [];
   List<WarrantyClaimModel> get warrantyClaims => _warrantyClaims;
 
-  void submitWarrantyClaim({
+  /// Daftar klaim garansi yang telah disetujui & memiliki jadwal kunjungan perbaikan teknisi
+  List<WarrantyClaimModel> get scheduledWarrantyVisits =>
+      _warrantyClaims.where((c) => c.hasScheduledVisit).toList();
+
+  Future<void> loadWarrantyClaimsFromBackend() async {
+    try {
+      final list = await ApiService.fetchWarrantyClaims();
+      if (list != null) {
+        final parsed = <WarrantyClaimModel>[];
+        for (final item in list) {
+          parsed.add(WarrantyClaimModel(
+            id: item['id']?.toString() ?? '',
+            orderId: item['order_id']?.toString(),
+            claimNumber: item['claim_number']?.toString() ?? 'CLM-2026',
+            serialNumber: item['serial_number']?.toString() ?? '',
+            machineModel: item['machine_model']?.toString() ?? 'Mesin Industri MDI',
+            purchaseDate: item['purchase_date']?.toString() ?? '-',
+            damageDescription: item['damage_description']?.toString() ?? '',
+            photoPath: item['photo_path']?.toString() ?? 'bukti_kerusakan.jpg',
+            fileType: item['file_type']?.toString() ?? 'image',
+            status: item['status_label']?.toString() ?? (item['status']?.toString() ?? 'Dalam Peninjauan'),
+            verificationStatus: item['verification_status']?.toString() ?? 'menunggu_verifikasi',
+            warrantyStatus: item['warranty_status']?.toString() ?? 'dalam_garansi',
+            scheduledVisitDate: item['scheduled_visit_date']?.toString(),
+            scheduledVisitTime: item['scheduled_visit_time']?.toString(),
+            visitAddress: item['visit_address']?.toString(),
+            technicianName: item['technician_name']?.toString(),
+            technicianPhone: item['technician_phone']?.toString(),
+            responseNotes: item['response_notes']?.toString(),
+            createdAt: item['created_at']?.toString(),
+          ));
+        }
+
+        _warrantyClaims.clear();
+        _warrantyClaims.addAll(parsed);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('loadWarrantyClaimsFromBackend error: $e');
+    }
+  }
+
+  Future<bool> submitWarrantyClaim({
     required String serialNumber,
+    String? machineModel,
+    String? orderId,
     required String purchaseDate,
     required String damageDescription,
     required String photoPath,
-  }) {
+    String? filePath,
+    List<int>? fileBytes,
+    String? fileName,
+    String? address,
+  }) async {
+    try {
+      final res = await ApiService.submitWarrantyClaim(
+        serialNumber: serialNumber,
+        machineModel: machineModel,
+        orderId: orderId,
+        purchaseDate: purchaseDate,
+        damageDescription: damageDescription,
+        photo: photoPath,
+        filePath: filePath,
+        fileBytes: fileBytes,
+        fileName: fileName,
+        address: address,
+      );
+
+      if (res != null && res['success'] == true) {
+        addNotification(
+          'Klaim Garansi Diterima Pabrik',
+          'Pengajuan klaim unit $serialNumber berhasil dikirim. Tim Engineering sedang memeriksa keabsahan bukti foto/video.',
+        );
+        await loadWarrantyClaimsFromBackend();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('submitWarrantyClaim error: $e');
+    }
+
+    // Fallback optimis lokal jika offline
     final claimNum = 'CLM-2026-0${_warrantyClaims.length + 20}';
     final claim = WarrantyClaimModel(
       id: 'WMT-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+      orderId: orderId,
       claimNumber: claimNum,
       serialNumber: serialNumber,
+      machineModel: machineModel ?? 'Mesin Industri MDI',
       purchaseDate: purchaseDate,
       damageDescription: damageDescription,
       photoPath: photoPath,
+      fileType: fileName?.toLowerCase().endsWith('.mp4') == true ? 'video' : 'image',
+      status: 'Dalam Peninjauan Tim Engineering',
+      verificationStatus: 'menunggu_verifikasi',
+      warrantyStatus: 'dalam_garansi',
+      visitAddress: address,
+      createdAt: 'Baru saja',
     );
 
     _warrantyClaims.insert(0, claim);
     addNotification(
-      'Klaim Garansi Diterima',
+      'Klaim Garansi Terkirim',
       'Klaim $claimNum untuk No. Seri $serialNumber sedang dievaluasi oleh Tim Garansi Pabrik.',
     );
     notifyListeners();
+    return true;
   }
 
   // Spareparts

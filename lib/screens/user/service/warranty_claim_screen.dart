@@ -8,7 +8,21 @@ import '../../../core/utils/file_picker_helper.dart';
 
 class WarrantyClaimScreen extends StatefulWidget {
   final bool asStandalonePage;
-  const WarrantyClaimScreen({super.key, this.asStandalonePage = false});
+  final String? initialSerialNumber;
+  final String? initialMachineModel;
+  final String? initialPurchaseDate;
+  final String? initialOrderId;
+  final String? initialAddress;
+
+  const WarrantyClaimScreen({
+    super.key,
+    this.asStandalonePage = false,
+    this.initialSerialNumber,
+    this.initialMachineModel,
+    this.initialPurchaseDate,
+    this.initialOrderId,
+    this.initialAddress,
+  });
 
   @override
   State<WarrantyClaimScreen> createState() => _WarrantyClaimScreenState();
@@ -28,6 +42,22 @@ class _WarrantyClaimScreenState extends State<WarrantyClaimScreen> {
           'Sensor display sentuh grinder TitanGrind tidak merespon saat suhu ruang naik.');
 
   String? _uploadedPhotoName;
+  String? _uploadedFilePath;
+  List<int>? _uploadedFileBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialSerialNumber != null && widget.initialSerialNumber!.isNotEmpty) {
+      _serialController.text = widget.initialSerialNumber!;
+    }
+    if (widget.initialMachineModel != null && widget.initialMachineModel!.isNotEmpty) {
+      _modelController.text = widget.initialMachineModel!;
+    }
+    if (widget.initialPurchaseDate != null && widget.initialPurchaseDate!.isNotEmpty) {
+      _purchaseDateController.text = widget.initialPurchaseDate!;
+    }
+  }
 
   // Machine quick presets
   final List<Map<String, String>> _machinePresets = [
@@ -575,14 +605,38 @@ class _WarrantyClaimScreenState extends State<WarrantyClaimScreen> {
                 onTap: () async {
                   final result = await FilePickerHelper.showUploadSourceSheet(
                     context: context,
-                    title: "Unggah Foto / Dokumen Kerusakan",
-                    subtitle: "Ambil foto langsung kamera, pilih galeri, atau lampirkan dokumen",
+                    title: "Unggah Foto / Video Bukti Kerusakan",
+                    subtitle: "Format didukung: JPG, PNG, JPEG, MP4 (Maksimal 25 MB)",
                     isDark: isDark,
                     brandColor: const Color(0xFF047857),
                   );
                   if (result != null) {
+                    final bytesLen = result.fileBytes?.length ?? 0;
+                    if (bytesLen > 25 * 1024 * 1024) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Ukuran file melebihi batas maksimal 25 MB! Silakan pilih foto atau video yang lebih kecil."),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                      return;
+                    }
+
+                    final ext = result.fileName.toLowerCase().split('.').last;
+                    if (!['jpg', 'jpeg', 'png', 'mp4'].contains(ext)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Format file tidak didukung! Harap unggah foto (JPG/PNG) atau video (MP4)."),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                      return;
+                    }
+
                     setState(() {
                       _uploadedPhotoName = result.fileName;
+                      _uploadedFilePath = result.filePath;
+                      _uploadedFileBytes = result.fileBytes;
                     });
                   }
                 },
@@ -708,27 +762,36 @@ class _WarrantyClaimScreenState extends State<WarrantyClaimScreen> {
               }
 
               final photo =
-                  _uploadedPhotoName ?? 'foto_kerusakan_display_grinder.jpg';
+                  _uploadedPhotoName ?? 'bukti_kerusakan.jpg';
+              final messenger = ScaffoldMessenger.of(context);
+              
               appState.submitWarrantyClaim(
                 serialNumber: _serialController.text.trim(),
+                machineModel: _modelController.text.trim(),
+                orderId: widget.initialOrderId,
                 purchaseDate: _purchaseDateController.text.trim(),
                 damageDescription: _descriptionController.text.trim(),
                 photoPath: photo,
-              );
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    "Klaim garansi berhasil dikirim ke pabrik! Tim teknik akan mengevaluasi dalam 1x24 jam.",
-                    style: TextStyle(fontSize: 12.5),
+                filePath: _uploadedFilePath,
+                fileBytes: _uploadedFileBytes,
+                fileName: _uploadedPhotoName,
+                address: widget.initialAddress,
+              ).then((_) {
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      "Klaim garansi & bukti fisik berhasil dikirim ke pabrik! Tim Engineering akan memverifikasi keabsahannya.",
+                      style: TextStyle(fontSize: 12.5),
+                    ),
+                    backgroundColor: Color(0xFF047857),
+                    duration: Duration(seconds: 3),
                   ),
-                  backgroundColor: Color(0xFF047857),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-
-              setState(() {
-                _claimSubTab = 1;
+                );
+                if (mounted) {
+                  setState(() {
+                    _claimSubTab = 1;
+                  });
+                }
               });
             },
             icon: const Icon(Icons.send_rounded, size: 17),

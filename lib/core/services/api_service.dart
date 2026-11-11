@@ -530,14 +530,30 @@ class ApiService {
     return null;
   }
 
+  static Future<List<dynamic>?> fetchServiceBookings() async {
+    try {
+      final response = await _getRequest('/services/bookings', timeout: const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        return body['data'];
+      }
+    } catch (e) {
+      debugPrint('ApiService fetchServiceBookings error: $e');
+    }
+    return null;
+  }
+
   static Future<Map<String, dynamic>?> bookingService({
     required String serialNumber,
     required String machineModel,
+    String? orderId,
     required String serviceType,
     required String scheduledDate,
     required String scheduledTime,
     required String address,
     required String issueDescription,
+    String? companyName,
   }) async {
     try {
       final response = await _postRequest(
@@ -545,11 +561,13 @@ class ApiService {
         {
           'serial_number': serialNumber,
           'machine_model': machineModel,
+          if (orderId != null && orderId.isNotEmpty) 'order_id': orderId,
           'service_type': serviceType,
           'scheduled_date': scheduledDate,
           'scheduled_time': scheduledTime,
           'address': address,
           'issue_description': issueDescription,
+          if (companyName != null && companyName.isNotEmpty) 'company_name': companyName,
         },
         timeout: const Duration(seconds: 35),
       );
@@ -563,26 +581,82 @@ class ApiService {
     return null;
   }
 
+  static Future<List<dynamic>?> fetchWarrantyClaims() async {
+    try {
+      final response = await _getRequest('/services/warranty-claims', timeout: const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        return body['data'];
+      }
+    } catch (e) {
+      debugPrint('ApiService fetchWarrantyClaims error: $e');
+    }
+    return null;
+  }
+
   static Future<Map<String, dynamic>?> submitWarrantyClaim({
     required String serialNumber,
+    String? machineModel,
+    String? orderId,
     required String purchaseDate,
     required String damageDescription,
-    required String photo,
+    String? photo,
+    String? filePath,
+    List<int>? fileBytes,
+    String? fileName,
+    String? address,
   }) async {
     try {
-      final response = await _postRequest(
-        '/services/warranty-claims',
-        {
-          'serial_number': serialNumber,
-          'purchase_date': purchaseDate,
-          'damage_description': damageDescription,
-          'photo': photo,
-        },
-        timeout: const Duration(seconds: 35),
-      );
+      if ((filePath != null && filePath.isNotEmpty) || (fileBytes != null && fileBytes.isNotEmpty)) {
+        final uri = Uri.parse('$baseUrl/services/warranty-claims');
+        final request = http.MultipartRequest('POST', uri);
+        request.headers.addAll({
+          'Accept': 'application/json',
+          if (authToken != null) 'Authorization': 'Bearer $authToken',
+        });
+        request.fields['serial_number'] = serialNumber;
+        if (machineModel != null && machineModel.isNotEmpty) {
+          request.fields['machine_model'] = machineModel;
+        }
+        if (orderId != null && orderId.isNotEmpty) {
+          request.fields['order_id'] = orderId;
+        }
+        request.fields['purchase_date'] = purchaseDate;
+        request.fields['damage_description'] = damageDescription;
+        if (address != null && address.isNotEmpty) {
+          request.fields['address'] = address;
+        }
 
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return jsonDecode(response.body);
+        if (filePath != null && filePath.isNotEmpty) {
+          request.files.add(await http.MultipartFile.fromPath('photo', filePath, filename: fileName));
+        } else if (fileBytes != null) {
+          request.files.add(http.MultipartFile.fromBytes('photo', fileBytes, filename: fileName ?? 'evidence.jpg'));
+        }
+
+        final streamed = await request.send().timeout(const Duration(seconds: 60));
+        final response = await http.Response.fromStream(streamed);
+        if (response.statusCode == 201 || response.statusCode == 200) {
+          return jsonDecode(response.body);
+        }
+      } else {
+        final response = await _postRequest(
+          '/services/warranty-claims',
+          {
+            'serial_number': serialNumber,
+            if (machineModel != null && machineModel.isNotEmpty) 'machine_model': machineModel,
+            if (orderId != null && orderId.isNotEmpty) 'order_id': orderId,
+            'purchase_date': purchaseDate,
+            'damage_description': damageDescription,
+            'photo': photo ?? 'bukti_kerusakan.jpg',
+            if (address != null && address.isNotEmpty) 'address': address,
+          },
+          timeout: const Duration(seconds: 35),
+        );
+
+        if (response.statusCode == 201 || response.statusCode == 200) {
+          return jsonDecode(response.body);
+        }
       }
     } catch (e) {
       debugPrint('ApiService submitWarrantyClaim error: $e');
