@@ -85,28 +85,6 @@ class _VideoPlayerModalState extends State<VideoPlayerModal> {
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
-
-                // Playing Overlay Badge
-                Positioned(
-                  top: 16,
-                  left: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      "VIDEO REVIEW PABRIK",
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
 
@@ -142,7 +120,7 @@ class _VideoPlayerModalState extends State<VideoPlayerModal> {
                           ),
                           child: Slider(
                             value: currentProgress,
-                            activeColor: AppColors.secondary,
+                            activeColor: Colors.white,
                             inactiveColor: Colors.white24,
                             onChanged: (val) {
                               setState(() {
@@ -176,10 +154,10 @@ class _VideoPlayerModalState extends State<VideoPlayerModal> {
                         },
                         child: CircleAvatar(
                           radius: 22,
-                          backgroundColor: AppColors.secondary,
+                          backgroundColor: Colors.white,
                           child: Icon(
                             isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: Colors.white,
+                            color: const Color(0xFF09090B),
                           ),
                         ),
                       ),

@@ -200,10 +200,10 @@ class _UserMainLayoutState extends State<UserMainLayout> {
         title: Container(
           height: 42,
           decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(12),
+            color: isDark ? AppColors.darkSurface : AppColors.surfaceVariant, // Zinc 100
+            borderRadius: BorderRadius.circular(999), // Web Pill Shape
             border: Border.all(
-              color: isDark ? Colors.white10 : AppColors.border,
+              color: isDark ? AppColors.darkBorder : AppColors.border,
               width: 1,
             ),
           ),
@@ -213,13 +213,13 @@ class _UserMainLayoutState extends State<UserMainLayout> {
               appState.setSearchQuery(val);
               setState(() {});
             },
-            style: GoogleFonts.plusJakartaSans(
+            style: GoogleFonts.inter(
               fontSize: 12.5,
               color: isDark ? Colors.white : AppColors.textPrimary,
             ),
             decoration: InputDecoration(
               hintText: "Cari tipe mesin, roaster, grinder...",
-              hintStyle: GoogleFonts.plusJakartaSans(
+              hintStyle: GoogleFonts.inter(
                 fontSize: 12,
                 color: AppColors.textMuted,
               ),
@@ -228,7 +228,7 @@ class _UserMainLayoutState extends State<UserMainLayout> {
                 size: 20,
                 color: AppColors.textMuted,
               ),
-              prefixIconConstraints: const BoxConstraints(minWidth: 38),
+              prefixIconConstraints: const BoxConstraints(minWidth: 40),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear_rounded, size: 16),

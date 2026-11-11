@@ -461,13 +461,13 @@ class FilePickerHelper {
     bool isDark = false,
     Color brandColor = const Color(0xFFC07F42),
   }) {
-    final bgColor = isDark ? const Color(0xFF111827) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final bgColor = isDark ? const Color(0xFF18181B) : Colors.white;
+    final textColor = isDark ? const Color(0xFFFAFAFA) : const Color(0xFF09090B);
     final subtextColor =
-        isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final borderColor = isDark ? Colors.white10 : const Color(0xFFE2E8F0);
+        isDark ? const Color(0xFFA1A1AA) : const Color(0xFF71717A);
+    final borderColor = isDark ? const Color(0xFF27272A) : const Color(0xFFE4E4E7);
     final cardInnerBg =
-        isDark ? const Color(0xFF1F2937) : const Color(0xFFF8FAFC);
+        isDark ? const Color(0xFF09090B) : const Color(0xFFFAFAFA);
 
     final isBca = bankAccount.contains('BCA');
     final bankName = isBca ? 'BANK BCA CORPORATE' : 'BANK MANDIRI';
@@ -509,23 +509,28 @@ class FilePickerHelper {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color:
-                            const Color(0xFF10B981).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(16),
+                        color: isDark
+                            ? const Color(0xFF27272A)
+                            : const Color(0xFFF4F4F5),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: isDark ? Colors.white12 : const Color(0xFFE4E4E7),
+                          width: 0.8,
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.check_circle_rounded,
-                              color: Color(0xFF10B981), size: 14),
+                          Icon(Icons.attachment_rounded,
+                              color: textColor, size: 14),
                           const SizedBox(width: 5),
                           Text(
-                            "BUKTI TRANSFER TERVERIFIKASI",
+                            "LAMPIRAN BUKTI TRANSFER",
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 9.5,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF10B981),
-                              letterSpacing: 0.3,
+                              fontWeight: FontWeight.w800,
+                              color: textColor,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ],
@@ -545,9 +550,10 @@ class FilePickerHelper {
                 // Title
                 Text(
                   "Bukti Transfer Pembayaran",
-                  style: GoogleFonts.outfit(
-                    fontSize: 16.5,
-                    fontWeight: FontWeight.bold,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
                     color: textColor,
                   ),
                 ),
@@ -571,7 +577,7 @@ class FilePickerHelper {
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      color: isDark ? Colors.black38 : const Color(0xFFF1F5F9),
+                      color: isDark ? const Color(0xFF27272A) : const Color(0xFFF4F4F5),
                       border: Border.all(color: borderColor),
                     ),
                     clipBehavior: Clip.antiAlias,
@@ -592,7 +598,7 @@ class FilePickerHelper {
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                      color: isDark ? const Color(0xFF27272A) : const Color(0xFFF4F4F5),
                       border: Border.all(color: borderColor),
                     ),
                     child: Row(
@@ -648,27 +654,36 @@ class FilePickerHelper {
                           Expanded(
                             child: Text(
                               bankName,
-                              style: GoogleFonts.outfit(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
-                                color: brandColor,
+                                color: textColor,
                               ),
                             ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
+                                horizontal: 9, vertical: 3.5),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF10B981)
-                                  .withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
+                              color: isDark
+                                  ? const Color(0xFF27272A)
+                                  : const Color(0xFFF4F4F5),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: isDark
+                                    ? const Color(0xFF3F3F46)
+                                    : const Color(0xFFE4E4E7),
+                              ),
                             ),
                             child: Text(
-                              "BERHASIL",
+                              "DRAF DP 50%",
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 9.5,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF10B981),
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? const Color(0xFFA1A1AA)
+                                    : const Color(0xFF52525B),
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ),
@@ -689,10 +704,11 @@ class FilePickerHelper {
                       const SizedBox(height: 2),
                       Text(
                         formattedAmount,
-                        style: GoogleFonts.outfit(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: brandColor,
+                          fontWeight: FontWeight.w800,
+                          color: textColor,
+                          letterSpacing: -0.5,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -719,7 +735,7 @@ class FilePickerHelper {
 
                 // Note
                 Text(
-                  "Bukti transfer digital ini sah dan diterbitkan untuk sistem antrean produksi PT MDI.",
+                  "Bukti transfer digital ini dilampirkan untuk verifikasi awal antrean produksi PT MDI.",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 10.5,
@@ -735,11 +751,13 @@ class FilePickerHelper {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(ctx),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: brandColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      backgroundColor:
+                          isDark ? Colors.white : const Color(0xFF09090B),
+                      foregroundColor:
+                          isDark ? const Color(0xFF09090B) : Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(999),
                       ),
                       elevation: 0,
                     ),

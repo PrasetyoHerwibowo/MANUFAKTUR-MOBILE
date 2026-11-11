@@ -103,7 +103,7 @@ class ProductModel {
     required this.videoReviewTitle,
     required this.videoReviewDuration,
     this.isCustomizable = true,
-    this.stockStatus = 'Pre-Order 14 Hari',
+    this.stockStatus = 'Pre-Order 30 Hari',
   })  : _commodity = commodity ?? 'Kopi',
         _processStage = processStage ?? 'Hilir',
         _machineType = machineType ?? '',
@@ -139,7 +139,7 @@ class ProductModel {
       videoReviewTitle: 'Uji Fungsi & Demo ${json['name'] ?? ''}',
       videoReviewDuration: '04:15',
       isCustomizable: true,
-      stockStatus: 'Pre-Order 14 Hari',
+      stockStatus: 'Pre-Order 30 Hari',
     );
   }
 }
