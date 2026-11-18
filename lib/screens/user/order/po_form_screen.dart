@@ -547,6 +547,8 @@ class _PoFormScreenState extends State<PoFormScreen> {
                           subtitle: "Pilih foto struk ATM, screenshot m-Banking, atau file PDF",
                           isDark: isDark,
                           brandColor: brandColor,
+                          allowedExtensions: ['pdf'],
+                          maxSizeBytes: 5 * 1024 * 1024,
                         );
                         if (result != null) {
                           setState(() {
@@ -860,18 +862,39 @@ class _PoFormScreenState extends State<PoFormScreen> {
                         ),
                       );
 
-                      await appState.createStandardPO(
-                        product: p,
-                        quantity: _quantity,
-                        deliveryAddress: address,
-                        customNotes: '',
-                        bankAccount: _selectedBank,
-                        proofPath: proof,
-                      );
+                      try {
+                        await appState.createStandardPO(
+                          product: p,
+                          quantity: _quantity,
+                          deliveryAddress: address,
+                          customNotes: '',
+                          bankAccount: _selectedBank,
+                          proofPath: proof,
+                          contactPerson: picName,
+                          phone: picPhone,
+                          companyName: appState.companyName.isNotEmpty ? appState.companyName : 'Mitra $picName',
+                          email: appState.userEmail,
+                        );
 
-                      if (context.mounted) {
-                        Navigator.pop(context); // Close loading dialog
-                        _showSuccessDialog(context, p, dp50, picName, isDark);
+                        if (context.mounted) {
+                          Navigator.pop(context); // Close loading dialog
+                          _showSuccessDialog(context, p, dp50, picName, isDark);
+                        }
+                      } catch (err) {
+                        if (context.mounted) {
+                          Navigator.pop(context); // Close loading dialog
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: const Color(0xFF991B1B),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              content: Text(
+                                "Gagal membuat pesanan: ${err.toString().replaceAll('Exception: ', '')}",
+                                style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+                              ),
+                            ),
+                          );
+                        }
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -1047,7 +1070,7 @@ class _PoFormScreenState extends State<PoFormScreen> {
                   size: 28,
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               Text(
                 "Pesanan PO Berhasil Dibuat!",
                 style: GoogleFonts.plusJakartaSans(
@@ -1058,51 +1081,7 @@ class _PoFormScreenState extends State<PoFormScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 6),
-              Text(
-                "Pre-Order unit ${p.name} atas nama $picName telah tercatat dalam sistem antrean pabrik PT Manufactur Dynamic Indonesia.",
-                style: GoogleFonts.inter(
-                  fontSize: 11.5,
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
-                  height: 1.45,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 14),
-
-              // Pill Ticket Badge for DP
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF18181B) : const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      "Nominal DP 50% Terverifikasi",
-                      style: GoogleFonts.inter(
-                        fontSize: 10.5,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _formatRupiah(dpAmount),
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : const Color(0xFF09090B),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
 
               SizedBox(
                 width: double.infinity,

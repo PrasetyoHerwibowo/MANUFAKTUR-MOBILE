@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../../core/utils/file_picker_helper.dart';
 import '../../../providers/app_state.dart';
 import '../../../core/models/service_ticket_model.dart';
 import '../../../core/theme/app_colors.dart';
@@ -37,49 +41,22 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
   int _bookingSubTab = 0;
 
   // Form Controllers
-  final _serialNumberController =
-      TextEditingController(text: 'SN-2024-CRAFT-092');
-  final _machineModelController =
-      TextEditingController(text: 'Artisan Espresso Craft Pro 2G');
-  final _dateController = TextEditingController(text: '12 Oktober 2026');
-  final _timeController = TextEditingController(text: '10:00 WIB');
-  final _addressController = TextEditingController(
-      text: 'Jl. Sudirman No. 45, Jakarta Selatan (Kafe Utama)');
-  final _descriptionController = TextEditingController(
-      text: 'Maintenance rutin 6 bulanan, descaling boiler & penggantian seal group head.');
+  final _serialNumberController = TextEditingController(text: '');
+  final _machineModelController = TextEditingController(text: '');
+  final _dateController = TextEditingController(text: '');
+  final _timeController = TextEditingController(text: '');
+  final _addressController = TextEditingController(text: '');
+  final _descriptionController = TextEditingController(text: '');
+
+  String? _selectedDateIso;
+  String? _selectedOrderId;
 
   ServiceTicketType _selectedServiceType = ServiceTicketType.maintenanceRutin;
 
-  // Business hours time slots for easy 1-tap selection (No radial dial clock!)
-  final List<String> _timeSlots = [
-    '09:00 WIB',
-    '10:00 WIB',
-    '11:00 WIB',
-    '13:00 WIB',
-    '14:00 WIB',
-    '15:00 WIB',
-    '16:00 WIB',
-    '17:00 WIB',
-  ];
-
-  // Registered machine presets
-  final List<Map<String, String>> _myMachines = [
-    {
-      'model': 'Artisan Espresso Craft Pro 2G',
-      'sn': 'SN-2024-CRAFT-092',
-      'label': 'Artisan Craft 2G (Bar Utama)',
-    },
-    {
-      'model': 'AromaMax Commercial 3G Heavy Duty',
-      'sn': 'SN-2025-AROMA-014',
-      'label': 'AromaMax 3G (Cabang Bali)',
-    },
-    {
-      'model': 'TitanGrind Commercial 84mm Flat Burr',
-      'sn': 'SN-2025-TITAN-881',
-      'label': 'TitanGrind 84mm (Bar Espresso)',
-    },
-  ];
+  // Upload Foto Kerusakan Mesin (Opsional)
+  String? _uploadedPhotoName;
+  String? _uploadedFilePath;
+  Uint8List? _uploadedFileBytes;
 
   String _getMonthName(int month) {
     const months = [
@@ -101,6 +78,9 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
     if (widget.initialAddress != null && widget.initialAddress!.isNotEmpty) {
       _addressController.text = widget.initialAddress!;
     }
+    if (widget.initialOrderId != null && widget.initialOrderId!.isNotEmpty) {
+      _selectedOrderId = widget.initialOrderId;
+    }
 
     _currentTab = widget.initialTab.clamp(0, 2);
     _mainTabController = TabController(
@@ -115,6 +95,13 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
           _currentTab = _mainTabController.index;
         });
       }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final appState = Provider.of<AppState>(context, listen: false);
+      await appState.loadMyCustomerMachines();
+      await appState.loadAvailableServiceDates();
+      await appState.loadServiceBookingsFromBackend();
     });
   }
 
@@ -543,6 +530,10 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
   /// 4A. Clean, Well-Organized Booking Form (Direct, Non-Stacked)
   Widget _buildBookingFormView(
       BuildContext context, AppState appState, bool isDark) {
+    final myMachines = appState.myCustomerMachines;
+    final bool hasSelectedMachine = _serialNumberController.text.isNotEmpty &&
+        _machineModelController.text.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -578,144 +569,298 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
               ),
               const SizedBox(height: 14),
 
-              Text(
-                "Pilih Cepat Dari Mesin Anda:",
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.darkTextSecondary : const Color(0xFF475569),
-                ),
-              ),
-              const SizedBox(height: 6),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: _myMachines.map((m) {
-                    final isSelected =
-                        _serialNumberController.text == m['sn'];
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(m['label']!),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          if (selected) {
-                            setState(() {
-                              _serialNumberController.text = m['sn']!;
-                              _machineModelController.text = m['model']!;
-                            });
-                          }
-                        },
-                        selectedColor: isDark
-                            ? const Color(0xFF78350F).withValues(alpha: 0.35)
-                            : const Color(0xFFFEF3C7),
-                        backgroundColor: isDark
-                            ? const Color(0xFF1E293B)
-                            : const Color(0xFFF8F9FA),
-                        labelStyle: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.w500,
-                          color: isSelected
-                              ? (isDark
-                                  ? const Color(0xFFFBBF24)
-                                  : const Color(0xFF92400E))
-                              : (isDark
-                                  ? AppColors.darkTextSecondary
-                                  : const Color(0xFF64748B)),
+              if (hasSelectedMachine) ...[
+                // Kartu Unit Mesin Terpilih (Bersih, Elegan, Tidak Perlu Input Manual)
+                Container(
+                  padding: const EdgeInsets.all(13),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFC07F42).withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC07F42).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        side: BorderSide(
-                          color: isSelected
-                              ? const Color(0xFFD97706)
-                              : (isDark
-                                  ? Colors.white10
-                                  : const Color(0xFFE5E7EB)),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                        child: const Icon(Icons.coffee_maker_rounded,
+                            size: 22, color: Color(0xFFC07F42)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _machineModelController.text,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      _serialNumberController.text = '';
+                                      _machineModelController.text = '';
+                                      _selectedOrderId = null;
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.white10 : Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: isDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.swap_horiz_rounded,
+                                            size: 13, color: Color(0xFF2563EB)),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          "Ganti Mesin",
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF2563EB),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.black26 : Colors.white,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.qr_code_scanner_rounded,
+                                          size: 12, color: Color(0xFF2563EB)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        "SN: ${_serialNumberController.text}",
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark ? Colors.white70 : const Color(0xFF334155),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.verified_rounded,
+                                          size: 11, color: Color(0xFF10B981)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        "Unit Terpilih",
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF10B981),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  }).toList(),
+                    ],
+                  ),
                 ),
-              ),
-
-              const SizedBox(height: 14),
-
-              _buildInputLabel("Nomor Seri Mesin", isDark),
-              TextField(
-                controller: _serialNumberController,
-                style: TextStyle(
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                  fontSize: 13,
+              ] else ...[
+                // Belum Memilih Mesin: Tampilkan Opsi Pilih Cepat Mesin Customer
+                Text(
+                  "Pilih Cepat Dari Mesin Anda:",
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white70 : const Color(0xFF1E293B),
+                  ),
                 ),
-                decoration: InputDecoration(
-                  fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8F9FA),
-                  filled: true,
-                  prefixIcon: const Icon(Icons.qr_code_scanner_rounded,
-                      size: 18,
-                      color: Color(0xFF2563EB)), // Distinct Blue icon
-                  suffixIcon: IconButton(
-                    tooltip: "Scan Barcode Mesin",
-                    icon: const Icon(Icons.document_scanner_rounded,
-                        size: 18, color: Color(0xFF2563EB)),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Scanner QR Code / Barcode aktif"),
-                          duration: Duration(seconds: 1),
+                const SizedBox(height: 2),
+                Text(
+                  "Pilih mesin yang ingin dijadwalkan kunjungan servis teknisi:",
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                if (myMachines.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline_rounded,
+                            size: 18,
+                            color: isDark ? Colors.white60 : const Color(0xFF64748B)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Belum ada unit mesin yang terdaftar di akun Anda. Anda perlu memiliki pesanan mesin untuk booking servis.",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: isDark ? Colors.white70 : const Color(0xFF475569),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: myMachines.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, idx) {
+                      final m = myMachines[idx];
+                      final model = m['model']?.toString() ?? 'Mesin Manufaktur';
+                      final sn = m['serial_number']?.toString() ?? '-';
+                      final orderCode = m['order_code']?.toString() ?? '';
+                      final address = m['delivery_address']?.toString() ?? '';
+
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _serialNumberController.text = sn;
+                            _machineModelController.text = model;
+                            _selectedOrderId = m['order_id']?.toString();
+                            if (_addressController.text.isEmpty && address.isNotEmpty) {
+                              _addressController.text = address;
+                            }
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(11),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFC07F42).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.coffee_maker_rounded,
+                                    size: 18, color: Color(0xFFC07F42)),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      model,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      "SN: $sn ${orderCode.isNotEmpty ? '• PO: $orderCode' : ''}",
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 10.5,
+                                        color: isDark
+                                            ? AppColors.darkTextSecondary
+                                            : const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  "Pilih",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF2563EB),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
                   ),
-                  hintText: "Contoh: SN-2024-CRAFT-092",
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: isDark ? Colors.white10 : const Color(0xFFE5E7EB),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: isDark ? Colors.white54 : const Color(0xFF0F172A),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              _buildInputLabel("Model / Tipe Mesin", isDark),
-              TextField(
-                controller: _machineModelController,
-                style: TextStyle(
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                  fontSize: 13,
-                ),
-                decoration: InputDecoration(
-                  fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8F9FA),
-                  filled: true,
-                  prefixIcon: const Icon(Icons.precision_manufacturing_outlined,
-                      size: 18,
-                      color: Color(0xFFC07F42)), // Distinct Warm Bronze icon
-                  hintText: "Contoh: Artisan Espresso Craft Pro 2G",
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: isDark ? Colors.white10 : const Color(0xFFE5E7EB),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: isDark ? Colors.white54 : const Color(0xFF0F172A),
-                    ),
-                  ),
-                ),
-              ),
+              ],
 
               const SizedBox(height: 16),
 
@@ -760,50 +905,8 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
               ),
               const SizedBox(height: 14),
 
-              // Date & Time (With user-friendly Time Slot picker modal!)
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildPickerCard(
-                      label: "Tanggal Kunjungan",
-                      value: _dateController.text,
-                      icon: Icons.calendar_today_rounded,
-                      iconColor: const Color(0xFF2563EB),
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate:
-                              DateTime.now().add(const Duration(days: 2)),
-                          firstDate: DateTime.now(),
-                          lastDate:
-                              DateTime.now().add(const Duration(days: 60)),
-                        );
-                        if (picked != null) {
-                          setState(() {
-                            _dateController.text =
-                                "${picked.day} ${_getMonthName(picked.month)} ${picked.year}";
-                          });
-                        }
-                      },
-                      isDark: isDark,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildPickerCard(
-                      label: "Jam Kedatangan",
-                      value: _timeController.text,
-                      icon: Icons.access_time_rounded,
-                      iconColor: const Color(0xFFD97706),
-                      onTap: () {
-                        // Open user-friendly business hour time slot sheet!
-                        _showEasyTimePickerModal(context, isDark);
-                      },
-                      isDark: isDark,
-                    ),
-                  ),
-                ],
-              ),
+              // Selector Tanggal Kunjungan Servis
+              _buildAvailableDateSelector(isDark),
 
               const SizedBox(height: 14),
 
@@ -894,6 +997,159 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
                   ),
                 ),
               ),
+
+              // Upload Foto Kerusakan / Error Mesin (Opsional, terutama untuk Perbaikan / Repair Mesin)
+              const SizedBox(height: 14),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildInputLabel(
+                    _selectedServiceType == ServiceTicketType.repairMesin
+                        ? "Foto Kerusakan / Error Mesin (Opsional)"
+                        : "Foto Kendala / Kondisi Mesin (Opsional)",
+                    isDark,
+                  ),
+                  if (_uploadedPhotoName != null)
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _uploadedPhotoName = null;
+                          _uploadedFilePath = null;
+                          _uploadedFileBytes = null;
+                        });
+                      },
+                      child: Text(
+                        "Hapus Foto",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFFE11D48),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              InkWell(
+                onTap: () async {
+                  final result = await FilePickerHelper.showUploadSourceSheet(
+                    context: context,
+                    title: "Unggah Foto Kerusakan / Kendala Mesin",
+                    subtitle: "Ambil foto langsung atau pilih dari galeri (JPG, JPEG, PNG • Maks. 5 MB)",
+                    isDark: isDark,
+                    brandColor: const Color(0xFFE11D48),
+                    allowedExtensions: ['jpg', 'jpeg', 'png'],
+                    maxSizeBytes: 5 * 1024 * 1024,
+                    allowVideo: false,
+                    allowPdf: false,
+                    isService: true,
+                  );
+                  if (result != null) {
+                    final bytesLen = result.fileBytes?.length ?? 0;
+                    if (bytesLen > 5 * 1024 * 1024) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Ukuran foto melebihi batas maksimal 5 MB!"),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                      return;
+                    }
+
+                    final ext = result.fileName.toLowerCase().split('.').last;
+                    if (!['jpg', 'jpeg', 'png'].contains(ext)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Format berkas harus berupa gambar JPG, JPEG, atau PNG."),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                      return;
+                    }
+
+                    setState(() {
+                      _uploadedPhotoName = result.fileName;
+                      _uploadedFilePath = result.filePath;
+                      _uploadedFileBytes = result.fileBytes;
+                    });
+                  }
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: _uploadedPhotoName != null
+                        ? (isDark ? const Color(0xFF14332A) : const Color(0xFFECFDF5))
+                        : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF8F9FA)),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _uploadedPhotoName != null
+                          ? const Color(0xFF15803D)
+                          : (_selectedServiceType == ServiceTicketType.repairMesin
+                              ? (isDark ? const Color(0xFFE11D48).withValues(alpha: 0.5) : const Color(0xFFFECDD3))
+                              : (isDark ? Colors.white10 : const Color(0xFFE5E7EB))),
+                      width: _uploadedPhotoName != null ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: _uploadedPhotoName != null
+                              ? const Color(0xFF15803D).withValues(alpha: 0.15)
+                              : (isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          _uploadedPhotoName != null
+                              ? Icons.check_circle_rounded
+                              : Icons.camera_alt_outlined,
+                          color: _uploadedPhotoName != null
+                              ? const Color(0xFF15803D)
+                              : (isDark ? Colors.white70 : const Color(0xFF0F172A)),
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _uploadedPhotoName ?? "Ambil / Unggah Foto Kerusakan (Kamera / Galeri)",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12.5,
+                                fontWeight: _uploadedPhotoName != null ? FontWeight.bold : FontWeight.w600,
+                                color: _uploadedPhotoName != null
+                                    ? const Color(0xFF15803D)
+                                    : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _uploadedPhotoName != null
+                                  ? "Foto siap dilampirkan ke laporan servis teknisi"
+                                  : (_selectedServiceType == ServiceTicketType.repairMesin
+                                      ? "Disarankan untuk mempermudah identifikasi suku cadang/error (Maks. 5 MB)"
+                                      : "Opsional · Format JPG, JPEG, PNG (Maks. 5 MB)"),
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10.5,
+                                color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_uploadedPhotoName != null)
+                        const Icon(Icons.check_rounded, color: Color(0xFF15803D), size: 18)
+                      else
+                        const Icon(Icons.cloud_upload_outlined, color: Color(0xFF94A3B8), size: 18),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -905,47 +1161,94 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
           width: double.infinity,
           height: 48,
           child: ElevatedButton.icon(
-            onPressed: () {
+            onPressed: () async {
               if (_serialNumberController.text.trim().isEmpty ||
                   _machineModelController.text.trim().isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text("Harap lengkapi nomor seri dan model mesin!"),
+                    content: Text("Harap pilih mesin yang ingin diservis terlebih dahulu!"),
                     backgroundColor: AppColors.error,
                   ),
                 );
                 return;
               }
 
-              appState.createServiceTicket(
+              if (_dateController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Harap pilih tanggal kunjungan servis yang tersedia!"),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+                return;
+              }
+
+              // Konversi foto kerusakan ke base64 jika dilampirkan (opsional)
+              String? base64Photo;
+              if (_uploadedFileBytes != null || _uploadedFilePath != null) {
+                Uint8List? bytes = _uploadedFileBytes;
+                if (bytes == null && _uploadedFilePath != null) {
+                  try {
+                    bytes = await File(_uploadedFilePath!).readAsBytes();
+                  } catch (_) {}
+                }
+
+                if (bytes != null && bytes.isNotEmpty) {
+                  final ext = (_uploadedPhotoName ?? '').toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
+                  base64Photo = 'data:image/$ext;base64,${base64Encode(bytes)}';
+                }
+              }
+
+              final res = await appState.createServiceTicket(
                 serialNumber: _serialNumberController.text.trim(),
                 machineModel: _machineModelController.text.trim(),
-                orderId: widget.initialOrderId,
+                orderId: _selectedOrderId ?? widget.initialOrderId,
                 type: _selectedServiceType,
-                preferredDate: _dateController.text.trim(),
-                preferredTime: _timeController.text.trim(),
+                preferredDate: _selectedDateIso ?? _dateController.text.trim(),
+                preferredTime: '', // Jam fleksibel sesuai rute teknisi
                 address: _addressController.text.trim(),
                 issueDescription: _descriptionController.text.trim(),
+                photo: base64Photo,
               );
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    "Jadwal servis berhasil dikonfirmasi! Tiket Anda telah tercatat.",
-                    style: TextStyle(fontSize: 12.5),
+              if (res['success'] == true && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      res['message'] ?? "Pengajuan booking berhasil dikirim! Status Pending menunggu konfirmasi admin pabrik.",
+                      style: const TextStyle(fontSize: 12.5),
+                    ),
+                    backgroundColor: const Color(0xFF15803D),
+                    duration: const Duration(seconds: 4),
                   ),
-                  backgroundColor: Color(0xFF15803D),
-                  duration: Duration(seconds: 3),
-                ),
-              );
+                );
 
-              setState(() {
-                _bookingSubTab = 1;
-              });
+                setState(() {
+                  _serialNumberController.clear();
+                  _machineModelController.clear();
+                  _dateController.clear();
+                  _selectedDateIso = null;
+                  _addressController.clear();
+                  _descriptionController.clear();
+                  _selectedOrderId = null;
+                  _uploadedPhotoName = null;
+                  _uploadedFilePath = null;
+                  _uploadedFileBytes = null;
+                  _bookingSubTab = 1;
+                });
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(res['message'] ?? "Gagal mengirim pengajuan booking ke backend."),
+                    backgroundColor: AppColors.error,
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
+              }
             },
-            icon: const Icon(Icons.check_circle_rounded, size: 18),
+            icon: const Icon(Icons.send_rounded, size: 18),
             label: Text(
-              "KONFIRMASI JADWAL SERVIS",
+              "KIRIM PENGAJUAN BOOKING SERVIS",
               style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
@@ -968,130 +1271,415 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
     );
   }
 
-  /// User-friendly Business Hour Time Slot Sheet (Solves the frustrating analog clock dial!)
-  void _showEasyTimePickerModal(BuildContext context, bool isDark) {
+  /// Modal Bottom Sheet Kalender Pemilihan Tanggal dengan Batas Kuota 3 Servis / Hari
+  Future<void> _showDatePickerWithQuota(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final appState = Provider.of<AppState>(context, listen: false);
+
+    if (appState.availableServiceDates.isEmpty) {
+      await appState.loadAvailableServiceDates();
+    }
+
+    if (!context.mounted) return;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
+      isScrollControlled: true,
+      backgroundColor: isDark ? const Color(0xFF111827) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (modalCtx) {
+        final dates = appState.availableServiceDates.isNotEmpty
+            ? appState.availableServiceDates
+            : List.generate(30, (i) {
+                final d = DateTime.now().add(Duration(days: i + 1));
+                final isSunday = d.weekday == DateTime.sunday;
+                final y = d.year.toString().padLeft(4, '0');
+                final m = d.month.toString().padLeft(2, '0');
+                final day = d.day.toString().padLeft(2, '0');
+                const dayNames = ['', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+                return {
+                  'date': '$y-$m-$day',
+                  'day_name': dayNames[d.weekday],
+                  'formatted_date': '${d.day} ${_getMonthName(d.month)} ${d.year}',
+                  'is_open': !isSunday,
+                  'technician_standby_count': isSunday ? 0 : 2,
+                  'max_quota': isSunday ? 0 : 3,
+                  'booked_count': 0,
+                  'remaining_quota': isSunday ? 0 : 3,
+                  'is_full': isSunday,
+                  'can_book': !isSunday,
+                  'notes': isSunday ? 'Tutup / Libur' : 'Tersedia 3 dari 3 slot',
+                };
+              });
+
         return Container(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurface : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.82,
           ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Handle Bar
               Center(
                 child: Container(
-                  width: 38,
+                  width: 40,
                   height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white24 : const Color(0xFFE5E7EB),
+                    color: isDark ? Colors.white24 : const Color(0xFFCBD5E1),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              Text(
-                "Pilih Jam Kedatangan Teknisi",
-                style: GoogleFonts.outfit(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                "Pilih slot jam kunjungan kerja operasional teknisi:",
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11.5,
-                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(height: 16),
 
-              // Grid of easy 1-tap time chips
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: _timeSlots.map((slot) {
-                  final isSelected = _timeController.text == slot;
-                  return InkWell(
-                    onTap: () {
-                      setState(() {
-                        _timeController.text = slot;
-                      });
-                      Navigator.pop(ctx);
-                    },
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      width: (MediaQuery.of(context).size.width - 62) / 3,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? (isDark ? const Color(0xFF334155) : const Color(0xFF0F172A))
-                            : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF8F9FA)),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isSelected
-                              ? (isDark ? Colors.white60 : const Color(0xFF0F172A))
-                              : (isDark ? Colors.white10 : const Color(0xFFE5E7EB)),
-                          width: isSelected ? 1.5 : 1,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        slot,
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Pilih Tanggal Servis",
                         style: GoogleFonts.outfit(
-                          fontSize: 13,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                          color: isSelected
-                              ? Colors.white
-                              : (isDark ? Colors.white70 : const Color(0xFF334155)),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
+                      const SizedBox(height: 2),
+                      Text(
+                        "Maksimal kuota 3 servis per hari (Penuh tidak dapat dipilih)",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(modalCtx),
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                  ),
+                ],
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
 
-              // Optional manual keyboard entry fallback
-              Center(
-                child: TextButton.icon(
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    final picked = await showTimePicker(
-                      context: context,
-                      initialTime: const TimeOfDay(hour: 10, minute: 0),
-                      initialEntryMode: TimePickerEntryMode.input, // Keyboard input!
+              // List of Dates
+              Expanded(
+                child: ListView.separated(
+                  itemCount: dates.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (listCtx, idx) {
+                    final item = dates[idx];
+                    final dateStr = item['date']?.toString() ?? '';
+                    final dayName = item['day_name']?.toString() ?? '';
+                    final formattedDate = item['formatted_date']?.toString() ?? dateStr;
+                    final isFull = item['is_full'] == true || (item['remaining_quota'] ?? 1) <= 0;
+                    final isOpen = item['is_open'] != false;
+                    final canBook = item['can_book'] == true && !isFull && isOpen;
+                    final remaining = (item['remaining_quota'] as num?)?.toInt() ?? (isFull ? 0 : 3);
+                    final isSelected = _selectedDateIso == dateStr;
+
+                    return InkWell(
+                      onTap: canBook
+                          ? () {
+                              setState(() {
+                                _selectedDateIso = dateStr;
+                                _dateController.text = "$dayName, $formattedDate";
+                              });
+                              Navigator.pop(modalCtx);
+                            }
+                          : () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    isFull
+                                        ? "Tanggal ini sudah penuh (maksimal 3 servis per hari). Silakan pilih hari lain."
+                                        : "Layanan servis tidak beroperasi pada hari tersebut.",
+                                  ),
+                                  duration: const Duration(seconds: 2),
+                                  backgroundColor: const Color(0xFFDC2626),
+                                ),
+                              );
+                            },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? (isDark ? const Color(0xFF1E3A8A).withValues(alpha: 0.3) : const Color(0xFFEFF6FF))
+                              : (!canBook
+                                  ? (isDark ? Colors.white.withValues(alpha: 0.03) : const Color(0xFFF8FAFC))
+                                  : (isDark ? const Color(0xFF1F2937) : Colors.white)),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected
+                                ? const Color(0xFF2563EB)
+                                : (!canBook
+                                    ? (isDark ? Colors.white10 : const Color(0xFFE2E8F0))
+                                    : (isDark ? Colors.white12 : const Color(0xFFE2E8F0))),
+                            width: isSelected ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            // Calendar Icon
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: !canBook
+                                    ? (isDark ? Colors.white10 : const Color(0xFFE2E8F0))
+                                    : (isSelected
+                                        ? const Color(0xFF2563EB)
+                                        : (isDark ? const Color(0xFF374151) : const Color(0xFFF1F5F9))),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                !canBook ? Icons.block_rounded : Icons.calendar_today_rounded,
+                                size: 18,
+                                color: !canBook
+                                    ? (isDark ? Colors.white38 : const Color(0xFF94A3B8))
+                                    : (isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF475569))),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+
+                            // Date info
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "$dayName, $formattedDate",
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 13.5,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                      color: !canBook
+                                          ? (isDark ? Colors.white38 : const Color(0xFF94A3B8))
+                                          : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    !canBook
+                                        ? (isFull ? "Penuh (Maks. 3/3 servis terisi)" : "Tutup / Libur")
+                                        : "Tersedia $remaining dari 3 slot servis",
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: !canBook
+                                          ? (isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626))
+                                          : (isDark ? const Color(0xFF34D399) : const Color(0xFF059669)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Badge Status
+                            if (!canBook)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xFF7F1D1D).withValues(alpha: 0.3)
+                                      : const Color(0xFFFEE2E2),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: isDark
+                                        ? const Color(0xFF991B1B)
+                                        : const Color(0xFFFCA5A5),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.cancel_outlined,
+                                      size: 11,
+                                      color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB91C1C),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      isFull ? "Penuh" : "Tutup",
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB91C1C),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFF2563EB)
+                                      : (isDark
+                                          ? const Color(0xFF064E3B).withValues(alpha: 0.3)
+                                          : const Color(0xFFDCFCE7)),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? const Color(0xFF1D4ED8)
+                                        : (isDark ? const Color(0xFF065F46) : const Color(0xFF86EFAC)),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Text(
+                                  isSelected ? "Terpilih" : "Tersedia",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : (isDark ? const Color(0xFF6EE7B7) : const Color(0xFF15803D)),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     );
-                    if (picked != null) {
-                      setState(() {
-                        _timeController.text =
-                            "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')} WIB";
-                      });
-                    }
                   },
-                  icon: const Icon(Icons.keyboard_outlined, size: 16),
-                  label: const Text("Ketik Jam Manual"),
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF2563EB),
-                    textStyle: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
                 ),
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+  /// Card Selector Tanggal Kunjungan Servis
+  Widget _buildAvailableDateSelector(bool isDark) {
+    final hasSelection = _dateController.text.isNotEmpty;
+    return InkWell(
+      onTap: () => _showDatePickerWithQuota(context),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: hasSelection
+                ? const Color(0xFF2563EB).withValues(alpha: 0.5)
+                : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+            width: hasSelection ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.calendar_month_rounded,
+                      size: 18, color: Color(0xFF2563EB)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "TANGGAL RENCANA KUNJUNGAN",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF2563EB),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        hasSelection ? _dateController.text : "Pilih Tanggal Kunjungan Servis",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        hasSelection ? "Ganti" : "Pilih Tanggal",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF2563EB),
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      const Icon(Icons.edit_calendar_rounded,
+                          size: 14, color: Color(0xFF2563EB)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded,
+                      size: 13, color: Color(0xFF10B981)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      hasSelection
+                          ? "Tanggal dipilih. Maksimal kuota 3 servis per hari. Admin akan mengonfirmasi penugasan teknisi."
+                          : "Klik untuk memilih tanggal (kuota maksimal 3 servis per hari). Tanggal penuh tidak dapat diklik.",
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? const Color(0xFF86EFAC) : const Color(0xFF047857),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1225,61 +1813,6 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
           ),
         );
       }).toList(),
-    );
-  }
-
-  /// Interactive Date / Time Picker Tile
-  Widget _buildPickerCard({
-    required String label,
-    required String value,
-    required IconData icon,
-    required Color iconColor,
-    required VoidCallback onTap,
-    required bool isDark,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8F9FA),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDark ? Colors.white12 : const Color(0xFFE5E7EB),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 14, color: iconColor),
-                const SizedBox(width: 5),
-                Text(
-                  label,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white60 : const Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.outfit(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1507,16 +2040,17 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
 
                 const SizedBox(height: 6),
 
-                // Schedule & Location
+                // Schedule & Location (Hari Kunjungan Kustom & Lokasi)
                 Row(
                   children: [
                     const Icon(Icons.calendar_today_outlined,
                         size: 12, color: Color(0xFF2563EB)), // Blue
                     const SizedBox(width: 5),
                     Text(
-                      "${t.preferredDate} · ${t.preferredTime}",
+                      t.preferredDate,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
+                        fontWeight: FontWeight.w600,
                         color: isDark ? Colors.white70 : const Color(0xFF475569),
                       ),
                     ),
@@ -1559,6 +2093,24 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
                   ),
                 ],
 
+                if (t.photoUrl != null && t.photoUrl!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.photo_camera_rounded, size: 13, color: Color(0xFFE11D48)),
+                      const SizedBox(width: 4),
+                      Text(
+                        "Foto Kerusakan Terlampir",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFFE11D48),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
                 const SizedBox(height: 10),
 
                 // Clean Footer Row: Technician + Action Buttons
@@ -1575,14 +2127,21 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.engineering_rounded,
-                          size: 15, color: Color(0xFF4F46E5)), // Indigo
+                      Icon(
+                        t.technicianName != null && t.technicianName!.isNotEmpty
+                            ? Icons.engineering_rounded
+                            : Icons.hourglass_top_rounded,
+                        size: 15,
+                        color: t.technicianName != null && t.technicianName!.isNotEmpty
+                            ? const Color(0xFF4F46E5)
+                            : const Color(0xFFD97706),
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          t.technicianName != null
+                          t.technicianName != null && t.technicianName!.isNotEmpty
                               ? "${t.technicianName}"
-                              : "Menunggu Penugasan",
+                              : "Menunggu Penugasan Teknisi",
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.plusJakartaSans(
@@ -1593,7 +2152,7 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
                         ),
                       ),
 
-                      if (t.technicianName != null) ...[
+                      if (t.technicianName != null && t.technicianName!.isNotEmpty) ...[
                         InkWell(
                           onTap: () => _showContactTechnicianDialog(t),
                           borderRadius: BorderRadius.circular(6),
@@ -1621,30 +2180,26 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
                         const SizedBox(width: 6),
                       ],
 
-                      if (!isDone) ...[
-                        InkWell(
-                          onTap: () => _showConfirmDoneDialog(context, appState, t),
-                          borderRadius: BorderRadius.circular(6),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF15803D),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.check_rounded, size: 12, color: Colors.white),
-                                const SizedBox(width: 4),
-                                Text(
-                                  "Selesai",
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
+                      if (isDone) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.check_circle_rounded, size: 12, color: Color(0xFF10B981)),
+                              const SizedBox(width: 4),
+                              Text(
+                                "Tuntas",
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF10B981),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -1656,68 +2211,6 @@ class _BookingServiceScreenState extends State<BookingServiceScreen>
           ),
         ],
       ),
-    );
-  }
-
-  /// User dialog to confirm service is finished
-  void _showConfirmDoneDialog(
-      BuildContext context, AppState appState, ServiceTicketModel ticket) {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return AlertDialog(
-          backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            "Konfirmasi Servis Selesai",
-            style: GoogleFonts.outfit(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: isDark ? Colors.white : const Color(0xFF0F172A),
-            ),
-          ),
-          content: Text(
-            "Apakah teknisi telah menyelesaikan pekerjaan servis untuk ${ticket.machineModel} di lokasi Anda?",
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 13,
-              color: isDark ? Colors.white70 : const Color(0xFF475569),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(
-                "Belum",
-                style: TextStyle(
-                  color: isDark ? Colors.white60 : const Color(0xFF64748B),
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                appState.updateTicketStatus(
-                    ticket.id, TicketStatus.selesai, ticket.technicianName ?? '');
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Servis berhasil ditandai selesai! Terima kasih."),
-                    backgroundColor: Color(0xFF15803D),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF15803D),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text("Ya, Servis Selesai"),
-            ),
-          ],
-        );
-      },
     );
   }
 

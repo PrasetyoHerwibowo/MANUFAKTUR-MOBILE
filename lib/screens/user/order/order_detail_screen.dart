@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:timeline_tile/timeline_tile.dart';
@@ -31,6 +32,125 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   String _formatCurrency(double amount) {
     return "Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}";
+  }
+
+  void _copyToClipboard(String text, String label) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: const Color(0xFF09090B),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        content: Text(
+          "$label ($text) berhasil disalin!",
+          style: GoogleFonts.inter(fontSize: 12, color: Colors.white),
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Widget _buildModalBankOption({
+    required String bankCode,
+    required String bankTitle,
+    required String accountNumber,
+    required String rawAccountNumber,
+    required String accountName,
+    required bool isSelected,
+    required VoidCallback onSelect,
+    required VoidCallback onCopy,
+    required bool isDark,
+  }) {
+    final borderColor = isSelected
+        ? (isDark ? Colors.white : const Color(0xFF09090B))
+        : (isDark ? Colors.white12 : const Color(0xFFE2E8F0));
+
+    final bgColor = isSelected
+        ? (isDark ? const Color(0xFF27272A) : const Color(0xFFF4F4F5))
+        : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC));
+
+    return InkWell(
+      onTap: onSelect,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor, width: isSelected ? 1.5 : 1),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: isSelected
+                  ? (isDark ? Colors.white : const Color(0xFF09090B))
+                  : (isDark ? Colors.white38 : const Color(0xFF94A3B8)),
+              size: 18,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    bankTitle,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : const Color(0xFF09090B),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    accountNumber,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                      color: isDark ? Colors.white : const Color(0xFF09090B),
+                    ),
+                  ),
+                  Text(
+                    accountName,
+                    style: GoogleFonts.inter(
+                      fontSize: 10.5,
+                      color: isDark ? Colors.white60 : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            InkWell(
+              onTap: onCopy,
+              borderRadius: BorderRadius.circular(999),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white12 : const Color(0xFFE4E4E7),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.copy_rounded, size: 12, color: isDark ? Colors.white : const Color(0xFF09090B)),
+                    const SizedBox(width: 4),
+                    Text(
+                      "Salin",
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : const Color(0xFF09090B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   ProductModel? _findMatchingProduct(AppState appState, String productName) {
@@ -823,23 +943,64 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          appState.completeDeliveryAndOpenAfterSales(o.id);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Instalasi Selesai! Layanan After-Sales Service & Garansi Aktif."),
-                              backgroundColor: AppColors.success,
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              title: const Text("Konfirmasi Unit Terpasang", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              content: const Text(
+                                "Apakah unit mesin telah tiba di lokasi dan selesai diinstalasi oleh tim teknisi pabrik?",
+                                style: TextStyle(fontSize: 13),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text("Batal", style: TextStyle(color: Colors.grey)),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue.shade700,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                  child: const Text("Ya, Konfirmasi"),
+                                ),
+                              ],
                             ),
                           );
+
+                          if (confirm == true && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Memproses konfirmasi unit terpasang..."),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+
+                            await appState.completeDeliveryAndOpenAfterSales(o.id);
+
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Instalasi Selesai! Layanan After-Sales Service & Garansi Aktif."),
+                                  backgroundColor: AppColors.success,
+                                ),
+                              );
+                            }
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue.shade700,
-                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         icon: const Icon(Icons.check_circle_outline, size: 18),
                         label: const Text(
                           "KONFIRMASI UNIT TERPASANG",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                         ),
                       ),
                     ),
@@ -1471,6 +1632,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       ),
       builder: (context) {
         bool isSubmitting = false;
+        String selectedBank = 'BCA Corporate (088-2930-112)';
         return StatefulBuilder(
           builder: (context, setModalState) => SafeArea(
           child: Container(
@@ -1612,60 +1774,32 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ),
                   const SizedBox(height: 8),
 
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            Icons.account_balance_rounded,
-                            size: 20,
-                            color: isDark ? Colors.white70 : const Color(0xFF0F172A),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "BCA Corporate — PT Kopi Industri",
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                "088-2930-112 (a.n. PT Kopi Industri)",
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 11.5,
-                                  color: isDark ? Colors.white60 : const Color(0xFF64748B),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                  // Bank BCA Card
+                  _buildModalBankOption(
+                    bankCode: 'BCA Corporate (088-2930-112)',
+                    bankTitle: 'Bank BCA Corporate',
+                    accountNumber: '088-2930-112',
+                    rawAccountNumber: '0882930112',
+                    accountName: 'PT Manufactur Dynamic Indonesia',
+                    isSelected: selectedBank.contains('BCA'),
+                    onSelect: () => setModalState(() => selectedBank = 'BCA Corporate (088-2930-112)'),
+                    onCopy: () => _copyToClipboard('0882930112', 'No. Rekening BCA'),
+                    isDark: isDark,
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Bank Mandiri Card
+                  _buildModalBankOption(
+                    bankCode: 'Mandiri (137-0099-221)',
+                    bankTitle: 'Bank Mandiri',
+                    accountNumber: '137-0099-221',
+                    rawAccountNumber: '1370099221',
+                    accountName: 'PT Manufactur Dynamic Indonesia',
+                    isSelected: selectedBank.contains('Mandiri'),
+                    onSelect: () => setModalState(() => selectedBank = 'Mandiri (137-0099-221)'),
+                    onCopy: () => _copyToClipboard('1370099221', 'No. Rekening Mandiri'),
+                    isDark: isDark,
                   ),
 
                   const SizedBox(height: 18),
@@ -1689,6 +1823,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         subtitle: "Pilih foto struk ATM, screenshot m-Banking, atau file PDF",
                         isDark: isDark,
                         brandColor: AppColors.primary,
+                        allowedExtensions: ['pdf'],
+                        maxSizeBytes: 5 * 1024 * 1024,
                       );
                       if (result != null) {
                         setModalState(() {
@@ -1745,7 +1881,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                 Text(
                                   _pelunasanProofName != null
                                       ? "File siap diunggah ke sistem verifikasi finance pabrik"
-                                      : "Format JPG, PNG, atau PDF (Maks. 10MB)",
+                                      : "Format JPG, PNG, atau PDF (Maks. 5MB)",
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 10.5,
                                     color: isDark ? Colors.white54 : const Color(0xFF94A3B8),
@@ -1808,7 +1944,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                 proof = '$prefix${base64Encode(bytes)}';
                               }
 
-                              await appState.uploadPelunasanProof(order.id, proof);
+                              await appState.uploadPelunasanProof(order.id, proof, bankMethod: selectedBank);
 
                               if (context.mounted) {
                                 Navigator.pop(context);
@@ -1874,6 +2010,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       ),
       builder: (context) {
         bool isSubmitting = false;
+        String selectedBank = 'BCA Corporate (088-2930-112)';
         return StatefulBuilder(
           builder: (context, setModalState) => SafeArea(
             child: Container(
@@ -2015,60 +2152,32 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     ),
                     const SizedBox(height: 8),
 
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.account_balance_rounded,
-                              size: 20,
-                              color: isDark ? Colors.white70 : const Color(0xFF0F172A),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "BCA Corporate — PT Kopi Industri",
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  "088-2930-112 (a.n. PT Kopi Industri)",
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 11.5,
-                                    color: isDark ? Colors.white60 : const Color(0xFF64748B),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                    // Bank BCA Card
+                    _buildModalBankOption(
+                      bankCode: 'BCA Corporate (088-2930-112)',
+                      bankTitle: 'Bank BCA Corporate',
+                      accountNumber: '088-2930-112',
+                      rawAccountNumber: '0882930112',
+                      accountName: 'PT Manufactur Dynamic Indonesia',
+                      isSelected: selectedBank.contains('BCA'),
+                      onSelect: () => setModalState(() => selectedBank = 'BCA Corporate (088-2930-112)'),
+                      onCopy: () => _copyToClipboard('0882930112', 'No. Rekening BCA'),
+                      isDark: isDark,
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Bank Mandiri Card
+                    _buildModalBankOption(
+                      bankCode: 'Mandiri (137-0099-221)',
+                      bankTitle: 'Bank Mandiri',
+                      accountNumber: '137-0099-221',
+                      rawAccountNumber: '1370099221',
+                      accountName: 'PT Manufactur Dynamic Indonesia',
+                      isSelected: selectedBank.contains('Mandiri'),
+                      onSelect: () => setModalState(() => selectedBank = 'Mandiri (137-0099-221)'),
+                      onCopy: () => _copyToClipboard('1370099221', 'No. Rekening Mandiri'),
+                      isDark: isDark,
                     ),
 
                     const SizedBox(height: 18),
@@ -2092,6 +2201,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           subtitle: "Pilih foto struk ATM, screenshot m-Banking, atau file PDF",
                           isDark: isDark,
                           brandColor: AppColors.primary,
+                          allowedExtensions: ['pdf'],
+                          maxSizeBytes: 5 * 1024 * 1024,
                         );
                         if (result != null) {
                           setModalState(() {
@@ -2148,7 +2259,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                   Text(
                                     _dpProofName != null
                                         ? "File siap diunggah ke sistem verifikasi finance pabrik"
-                                        : "Format JPG, PNG, atau PDF (Maks. 10MB)",
+                                        : "Format JPG, PNG, atau PDF (Maks. 5MB)",
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 10.5,
                                       color: isDark ? Colors.white54 : const Color(0xFF94A3B8),
@@ -2211,7 +2322,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                   proof = '$prefix${base64Encode(bytes)}';
                                 }
 
-                                await appState.reuploadDpProof(order.id, proof);
+                                await appState.reuploadDpProof(order.id, proof, bankMethod: selectedBank);
 
                                 if (context.mounted) {
                                   Navigator.pop(context);

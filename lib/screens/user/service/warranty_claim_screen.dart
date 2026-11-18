@@ -32,15 +32,12 @@ class _WarrantyClaimScreenState extends State<WarrantyClaimScreen> {
   // Sub-view: 0 = Form Pengajuan, 1 = Riwayat Klaim
   int _claimSubTab = 0;
 
-  final _serialController = TextEditingController(text: 'SN-2025-TITAN-881');
-  final _modelController =
-      TextEditingController(text: 'TitanGrind Commercial 84mm Flat Burr');
-  final _purchaseDateController =
-      TextEditingController(text: '15 Januari 2026');
-  final _descriptionController = TextEditingController(
-      text:
-          'Sensor display sentuh grinder TitanGrind tidak merespon saat suhu ruang naik.');
+  final _serialController = TextEditingController(text: '');
+  final _modelController = TextEditingController(text: '');
+  final _purchaseDateController = TextEditingController(text: '');
+  final _descriptionController = TextEditingController(text: '');
 
+  String? _selectedOrderId;
   String? _uploadedPhotoName;
   String? _uploadedFilePath;
   List<int>? _uploadedFileBytes;
@@ -57,26 +54,16 @@ class _WarrantyClaimScreenState extends State<WarrantyClaimScreen> {
     if (widget.initialPurchaseDate != null && widget.initialPurchaseDate!.isNotEmpty) {
       _purchaseDateController.text = widget.initialPurchaseDate!;
     }
-  }
+    if (widget.initialOrderId != null && widget.initialOrderId!.isNotEmpty) {
+      _selectedOrderId = widget.initialOrderId;
+    }
 
-  // Machine quick presets
-  final List<Map<String, String>> _machinePresets = [
-    {
-      'model': 'TitanGrind Commercial 84mm Flat Burr',
-      'sn': 'SN-2025-TITAN-881',
-      'date': '15 Januari 2026',
-    },
-    {
-      'model': 'Artisan Espresso Craft Pro 2G',
-      'sn': 'SN-2024-CRAFT-092',
-      'date': '10 Oktober 2025',
-    },
-    {
-      'model': 'AromaMax Commercial 3G Heavy Duty',
-      'sn': 'SN-2025-AROMA-014',
-      'date': '01 Februari 2026',
-    },
-  ];
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final appState = Provider.of<AppState>(context, listen: false);
+      await appState.loadMyCustomerMachines();
+      await appState.loadWarrantyClaimsFromBackend();
+    });
+  }
 
   @override
   void dispose() {
@@ -352,6 +339,10 @@ class _WarrantyClaimScreenState extends State<WarrantyClaimScreen> {
   /// 3A. Modern Claim Form (Grouped, Non-Stacked)
   Widget _buildClaimFormView(
       BuildContext context, AppState appState, bool isDark) {
+    final myMachines = appState.myCustomerMachines;
+    final bool hasSelectedMachine = _serialController.text.isNotEmpty &&
+        _modelController.text.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -386,146 +377,298 @@ class _WarrantyClaimScreenState extends State<WarrantyClaimScreen> {
               ),
               const SizedBox(height: 14),
 
-              Text(
-                "Pilih Cepat Unit Mesin:",
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: isDark
-                      ? AppColors.darkTextSecondary
-                      : const Color(0xFF475569),
-                ),
-              ),
-              const SizedBox(height: 6),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: _machinePresets.map((m) {
-                    final isSelected = _serialController.text == m['sn'];
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(m['model']!),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          if (selected) {
-                            setState(() {
-                              _serialController.text = m['sn']!;
-                              _modelController.text = m['model']!;
-                              _purchaseDateController.text = m['date']!;
-                            });
-                          }
-                        },
-                        selectedColor: isDark
-                            ? const Color(0xFF78350F).withValues(alpha: 0.35)
-                            : const Color(0xFFFEF3C7),
-                        backgroundColor: isDark
-                            ? const Color(0xFF1E293B)
-                            : const Color(0xFFF8F9FA),
-                        labelStyle: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.w500,
-                          color: isSelected
-                              ? (isDark
-                                  ? const Color(0xFFFBBF24)
-                                  : const Color(0xFF92400E))
-                              : (isDark
-                                  ? AppColors.darkTextSecondary
-                                  : const Color(0xFF64748B)),
+              if (hasSelectedMachine) ...[
+                // Kartu Unit Mesin Terpilih (Bersih, Elegan, Tidak Perlu Input Manual)
+                Container(
+                  padding: const EdgeInsets.all(13),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFC07F42).withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC07F42).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        side: BorderSide(
-                          color: isSelected
-                              ? const Color(0xFFD97706)
-                              : (isDark ? Colors.white10 : const Color(0xFFE5E7EB)),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                        child: const Icon(Icons.precision_manufacturing_rounded,
+                            size: 22, color: Color(0xFFC07F42)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _modelController.text,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      _serialController.text = '';
+                                      _modelController.text = '';
+                                      _purchaseDateController.text = '';
+                                      _selectedOrderId = null;
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.white10 : Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: isDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.swap_horiz_rounded,
+                                            size: 13, color: Color(0xFF2563EB)),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          "Ganti",
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF2563EB),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? Colors.black26 : Colors.white,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.qr_code_scanner_rounded,
+                                          size: 12, color: Color(0xFF2563EB)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        "SN: ${_serialController.text}",
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark ? Colors.white70 : const Color(0xFF334155),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (_purchaseDateController.text.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.verified_rounded,
+                                            size: 11, color: Color(0xFF10B981)),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          "Garansi Terverifikasi",
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF10B981),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  }).toList(),
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              _buildInputLabel("Nomor Seri Mesin (Lihat Nameplate)", isDark),
-              TextField(
-                controller: _serialController,
-                style: TextStyle(
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                  fontSize: 13,
-                ),
-                decoration: InputDecoration(
-                  fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8F9FA),
-                  filled: true,
-                  prefixIcon: const Icon(Icons.qr_code_rounded,
-                      size: 18,
-                      color: Color(0xFFC07F42)), // Distinct bronze coffee icon
-                  hintText: "Contoh: SN-2025-TITAN-881",
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: isDark ? Colors.white10 : const Color(0xFFE5E7EB),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: isDark ? Colors.white54 : const Color(0xFF0F172A),
-                    ),
+                    ],
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 12),
-
-              _buildInputLabel("Tanggal Pembelian / Serah Terima", isDark),
-              TextField(
-                controller: _purchaseDateController,
-                readOnly: true,
-                style: TextStyle(
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                  fontSize: 13,
-                ),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now().subtract(const Duration(days: 120)),
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime.now(),
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      _purchaseDateController.text =
-                          "${picked.day} ${_getMonthName(picked.month)} ${picked.year}";
-                    });
-                  }
-                },
-                decoration: InputDecoration(
-                  fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8F9FA),
-                  filled: true,
-                  prefixIcon: const Icon(Icons.calendar_today_rounded,
-                      size: 18,
-                      color: Color(0xFF2563EB)), // Distinct blue calendar icon
-                  hintText: "Pilih tanggal pembelian...",
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: isDark ? Colors.white10 : const Color(0xFFE5E7EB),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: isDark ? Colors.white54 : const Color(0xFF0F172A),
-                    ),
+              ] else ...[
+                // Belum Memilih Mesin: Tampilkan Opsi Pilih Cepat Mesin Customer
+                Text(
+                  "Pilih Cepat Dari Mesin Anda:",
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white70 : const Color(0xFF1E293B),
                   ),
                 ),
-              ),
+                const SizedBox(height: 2),
+                Text(
+                  "Pilih unit mesin yang mengalami kendala kerusakan fisik:",
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                if (myMachines.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline_rounded,
+                            size: 18,
+                            color: isDark ? Colors.white60 : const Color(0xFF64748B)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Belum ada unit mesin yang terdaftar di akun Anda.",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: isDark ? Colors.white70 : const Color(0xFF475569),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: myMachines.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, idx) {
+                      final m = myMachines[idx];
+                      final model = m['model']?.toString() ?? 'Mesin Manufaktur';
+                      final sn = m['serial_number']?.toString() ?? '-';
+                      final orderCode = m['order_code']?.toString() ?? '';
+                      final purchaseDate = m['purchase_date']?.toString() ?? '15 Jan 2026';
+
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _serialController.text = sn;
+                            _modelController.text = model;
+                            _purchaseDateController.text = purchaseDate;
+                            _selectedOrderId = m['order_id']?.toString();
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(11),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFC07F42).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.precision_manufacturing_rounded,
+                                    size: 18, color: Color(0xFFC07F42)),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      model,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      "SN: $sn ${orderCode.isNotEmpty ? '• PO: $orderCode' : ''}",
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 10.5,
+                                        color: isDark
+                                            ? AppColors.darkTextSecondary
+                                            : const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  "Pilih",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF2563EB),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+              ],
             ],
           ),
         ),
@@ -609,6 +752,9 @@ class _WarrantyClaimScreenState extends State<WarrantyClaimScreen> {
                     subtitle: "Format didukung: JPG, PNG, JPEG, MP4 (Maksimal 25 MB)",
                     isDark: isDark,
                     brandColor: const Color(0xFF047857),
+                    allowedExtensions: ['jpg', 'jpeg', 'png', 'mp4'],
+                    maxSizeBytes: 25 * 1024 * 1024,
+                    allowVideo: true,
                   );
                   if (result != null) {
                     final bytesLen = result.fileBytes?.length ?? 0;
@@ -750,11 +896,22 @@ class _WarrantyClaimScreenState extends State<WarrantyClaimScreen> {
           child: ElevatedButton.icon(
             onPressed: () {
               if (_serialController.text.trim().isEmpty ||
-                  _descriptionController.text.trim().isEmpty) {
+                  _modelController.text.trim().isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text(
-                        "Harap lengkapi nomor seri dan deskripsi kerusakan!"),
+                        "Harap pilih mesin yang mengalami kendala terlebih dahulu!"),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+                return;
+              }
+
+              if (_descriptionController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        "Harap isi deskripsi kendala kerusakan unit mesin!"),
                     backgroundColor: AppColors.error,
                   ),
                 );
@@ -768,7 +925,7 @@ class _WarrantyClaimScreenState extends State<WarrantyClaimScreen> {
               appState.submitWarrantyClaim(
                 serialNumber: _serialController.text.trim(),
                 machineModel: _modelController.text.trim(),
-                orderId: widget.initialOrderId,
+                orderId: _selectedOrderId ?? widget.initialOrderId,
                 purchaseDate: _purchaseDateController.text.trim(),
                 damageDescription: _descriptionController.text.trim(),
                 photoPath: photo,

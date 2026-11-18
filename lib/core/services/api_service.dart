@@ -7,7 +7,8 @@ class ApiService {
   // Candidate URLs in priority order
   static final List<String> candidateBaseUrls = [
     'http://127.0.0.1:8000/api',       // Fast via ADB reverse on physical Android or Windows/Web
-    'http://192.168.1.4:8000/api',     // Direct via Local Wi-Fi network (Physical Android)
+    'http://192.168.1.4:8000/api',     // Active Wi-Fi network (Physical Android)
+    'http://192.168.1.5:8000/api',     // Secondary Wi-Fi fallback
     'http://10.0.2.2:8000/api',        // Android Emulator
     'http://localhost/MANUFAKTUR/public/api',
   ];
@@ -35,10 +36,8 @@ class ApiService {
   }) async {
     final payload = jsonEncode(body);
     List<String> urlsToTry = [baseUrl];
-    if (!_baseUrlVerified) {
-      for (final u in candidateBaseUrls) {
-        if (!urlsToTry.contains(u)) urlsToTry.add(u);
-      }
+    for (final u in candidateBaseUrls) {
+      if (!urlsToTry.contains(u)) urlsToTry.add(u);
     }
 
     Exception? lastException;
@@ -60,13 +59,11 @@ class ApiService {
   /// Helper untuk mengirim GET request dengan auto-fallback jika koneksi pertama gagal
   static Future<http.Response> _getRequest(
     String endpoint, {
-    Duration timeout = const Duration(seconds: 20),
+    Duration timeout = const Duration(seconds: 15),
   }) async {
     List<String> urlsToTry = [baseUrl];
-    if (!_baseUrlVerified) {
-      for (final u in candidateBaseUrls) {
-        if (!urlsToTry.contains(u)) urlsToTry.add(u);
-      }
+    for (final u in candidateBaseUrls) {
+      if (!urlsToTry.contains(u)) urlsToTry.add(u);
     }
 
     Exception? lastException;
@@ -448,23 +445,41 @@ class ApiService {
     String? customNotes,
     String? bankMethod,
     String? dpProof,
+    String? modelCode,
+    String? productName,
+    double? unitPrice,
+    String? contactName,
+    String? phone,
+    String? companyName,
+    String? email,
   }) async {
     try {
       final response = await _postRequest(
         '/orders',
         {
           'machine_id': machineId,
+          if (modelCode != null && modelCode.isNotEmpty) 'model_code': modelCode,
+          if (productName != null && productName.isNotEmpty) 'product_name': productName,
+          if (unitPrice != null && unitPrice > 0) 'unit_price': unitPrice,
           'quantity': quantity,
           'delivery_address': deliveryAddress,
-          'custom_notes': customNotes,
-          'bank_method': bankMethod,
-          'dp_proof': dpProof,
+          if (customNotes != null && customNotes.isNotEmpty) 'custom_notes': customNotes,
+          if (bankMethod != null && bankMethod.isNotEmpty) 'bank_method': bankMethod,
+          if (dpProof != null && dpProof.isNotEmpty) 'dp_proof': dpProof,
+          if (contactName != null && contactName.isNotEmpty) 'contact_name': contactName,
+          if (phone != null && phone.isNotEmpty) 'phone': phone,
+          if (companyName != null && companyName.isNotEmpty) 'company_name': companyName,
+          if (email != null && email.isNotEmpty) 'email': email,
         },
         timeout: const Duration(seconds: 35),
       );
 
+      final decoded = jsonDecode(response.body);
       if (response.statusCode == 201 || response.statusCode == 200) {
-        return jsonDecode(response.body);
+        return decoded is Map<String, dynamic> ? decoded : {'success': true, 'data': decoded};
+      } else {
+        debugPrint('createOrder server responded with status ${response.statusCode}: ${response.body}');
+        return decoded is Map<String, dynamic> ? decoded : null;
       }
     } catch (e) {
       debugPrint('ApiService createOrder error: $e');
@@ -472,11 +487,15 @@ class ApiService {
     return null;
   }
 
-  static Future<bool> uploadDpProof(String orderId, String proof) async {
+  static Future<bool> uploadDpProof(String orderId, String proof, {String? bankMethod}) async {
     try {
+      final payload = <String, dynamic>{'proof': proof};
+      if (bankMethod != null && bankMethod.isNotEmpty) {
+        payload['bank_method'] = bankMethod;
+      }
       final response = await _postRequest(
         '/orders/$orderId/pay-dp',
-        {'proof': proof},
+        payload,
         timeout: const Duration(seconds: 35),
       );
 
@@ -487,11 +506,15 @@ class ApiService {
     }
   }
 
-  static Future<bool> uploadPelunasanProof(String orderId, String proof) async {
+  static Future<bool> uploadPelunasanProof(String orderId, String proof, {String? bankMethod}) async {
     try {
+      final payload = <String, dynamic>{'proof': proof};
+      if (bankMethod != null && bankMethod.isNotEmpty) {
+        payload['bank_method'] = bankMethod;
+      }
       final response = await _postRequest(
         '/orders/$orderId/pay-pelunasan',
-        {'proof': proof},
+        payload,
         timeout: const Duration(seconds: 35),
       );
 
@@ -500,6 +523,28 @@ class ApiService {
       debugPrint('ApiService uploadPelunasanProof error: $e');
       return false;
     }
+  }
+
+  /// Konfirmasi Unit Terpasang oleh Customer (Tahap 6 -> Tahap 7)
+  static Future<Map<String, dynamic>?> confirmInstallation(String orderId) async {
+    try {
+      final response = await _postRequest(
+        '/orders/$orderId/confirm-installation',
+        {},
+        timeout: const Duration(seconds: 25),
+      );
+
+      final decoded = jsonDecode(response.body);
+      if (response.statusCode == 200 && decoded['success'] == true) {
+        return decoded;
+      } else {
+        debugPrint('confirmInstallation server responded with status ${response.statusCode}: ${response.body}');
+        return decoded is Map<String, dynamic> ? decoded : null;
+      }
+    } catch (e) {
+      debugPrint('ApiService confirmInstallation error: $e');
+    }
+    return null;
   }
 
   static Future<Map<String, dynamic>?> fetchInvoiceData(String orderId) async {
@@ -530,6 +575,22 @@ class ApiService {
     return null;
   }
 
+  /// Ambil daftar unit mesin yang dimiliki / dipesan oleh customer
+  static Future<List<Map<String, dynamic>>?> fetchMyMachines() async {
+    try {
+      final response = await _getRequest('/services/my-machines', timeout: const Duration(seconds: 15));
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true && body['data'] is List) {
+          return List<Map<String, dynamic>>.from(body['data']);
+        }
+      }
+    } catch (e) {
+      debugPrint('ApiService fetchMyMachines error: $e');
+    }
+    return null;
+  }
+
   static Future<List<dynamic>?> fetchServiceBookings() async {
     try {
       final response = await _getRequest('/services/bookings', timeout: const Duration(seconds: 15));
@@ -544,16 +605,35 @@ class ApiService {
     return null;
   }
 
+  /// Ambil jadwal ketersediaan servis, status hari & teknisi standby dari backend
+  static Future<List<Map<String, dynamic>>?> fetchAvailableServiceDates({int days = 21}) async {
+    try {
+      final response = await _getRequest('/services/available-dates?days=$days', timeout: const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true && body['data'] is List) {
+          final List rawList = body['data'];
+          return rawList.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('ApiService fetchAvailableServiceDates error: $e');
+    }
+    return null;
+  }
+
   static Future<Map<String, dynamic>?> bookingService({
     required String serialNumber,
     required String machineModel,
     String? orderId,
     required String serviceType,
     required String scheduledDate,
-    required String scheduledTime,
+    String? scheduledTime,
     required String address,
     required String issueDescription,
     String? companyName,
+    String? photo,
   }) async {
     try {
       final response = await _postRequest(
@@ -564,16 +644,21 @@ class ApiService {
           if (orderId != null && orderId.isNotEmpty) 'order_id': orderId,
           'service_type': serviceType,
           'scheduled_date': scheduledDate,
-          'scheduled_time': scheduledTime,
+          if (scheduledTime != null && scheduledTime.isNotEmpty) 'scheduled_time': scheduledTime,
           'address': address,
           'issue_description': issueDescription,
           if (companyName != null && companyName.isNotEmpty) 'company_name': companyName,
+          if (photo != null && photo.isNotEmpty) 'photo': photo,
         },
         timeout: const Duration(seconds: 35),
       );
 
+      final decoded = jsonDecode(response.body);
       if (response.statusCode == 201 || response.statusCode == 200) {
-        return jsonDecode(response.body);
+        return decoded is Map<String, dynamic> ? decoded : {'success': true, 'data': decoded};
+      } else {
+        debugPrint('bookingService error ${response.statusCode}: ${response.body}');
+        return decoded is Map<String, dynamic> ? decoded : {'success': false, 'message': 'Gagal menjadwalkan servis'};
       }
     } catch (e) {
       debugPrint('ApiService bookingService error: $e');

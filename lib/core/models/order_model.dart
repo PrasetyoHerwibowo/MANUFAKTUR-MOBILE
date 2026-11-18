@@ -34,7 +34,7 @@ class OrderModel {
   final String serialNumber;
   final int warrantyPeriodMonths;
   final String? warrantyExpiryDate;
-  final bool isWarrantyActive;
+  bool isWarrantyActive;
   final String? imageUrl;
   final String? description;
   final String buyerPhone;

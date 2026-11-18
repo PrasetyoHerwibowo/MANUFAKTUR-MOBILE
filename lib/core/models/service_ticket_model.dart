@@ -30,6 +30,7 @@ class ServiceTicketModel {
   String? technicianName;
   String? technicianPhone;
   String? adminNotes;
+  final String? photoUrl;
   final String? createdAt;
 
   ServiceTicketModel({
@@ -48,6 +49,7 @@ class ServiceTicketModel {
     this.technicianName,
     this.technicianPhone,
     this.adminNotes,
+    this.photoUrl,
     this.createdAt,
   });
 
@@ -67,9 +69,9 @@ class ServiceTicketModel {
   String get statusTitle {
     switch (status) {
       case TicketStatus.menungguVerifikasi:
-        return "Menunggu Verifikasi";
+        return "Pending";
       case TicketStatus.dijadwalkan:
-        return "Jadwal Dikonfirmasi";
+        return "Confirmed";
       case TicketStatus.teknisiOtw:
         return "Teknisi OTW";
       case TicketStatus.dalamPengerjaan:

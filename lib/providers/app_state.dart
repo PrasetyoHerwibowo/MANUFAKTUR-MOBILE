@@ -587,94 +587,102 @@ class AppState extends ChangeNotifier {
     required String customNotes,
     required String bankAccount,
     required String proofPath,
+    String? contactPerson,
+    String? phone,
+    String? companyName,
+    String? email,
   }) async {
+    final effectiveContact = (contactPerson != null && contactPerson.isNotEmpty)
+        ? contactPerson
+        : (_userName.isNotEmpty ? _userName : 'Pelanggan Procurement');
+    final effectivePhone = (phone != null && phone.isNotEmpty) ? phone : _userPhone;
+    final effectiveCompany = (companyName != null && companyName.isNotEmpty)
+        ? companyName
+        : (_companyName.isNotEmpty ? _companyName : 'Mitra $effectiveContact');
+    final effectiveEmail = (email != null && email.isNotEmpty) ? email : _userEmail;
+
     final total = product.price * quantity;
     final dp = total * 0.5;
     final pelunasan = total * 0.5;
-    final newPoNumber = 'PO-2026-0${_orders.length + 90}';
 
-    OrderModel newOrder = OrderModel(
-      id: 'ORD-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-      poNumber: newPoNumber,
-      companyName: _companyName.isNotEmpty ? _companyName : 'PT Kopi Nusantara Jaya',
-      contactPerson: _userName.isNotEmpty ? _userName : 'Perwakilan Procurement',
+    // Resolusi machine id secara dinamis & akurat
+    int? machineIdInt = int.tryParse(product.id);
+    if (machineIdInt == null || machineIdInt <= 0) {
+      if (_products != null) {
+        for (final p in _products!) {
+          if (p.name.trim().toLowerCase() == product.name.trim().toLowerCase() ||
+              (p.modelCode != null && p.modelCode == product.modelCode)) {
+            machineIdInt = int.tryParse(p.id);
+            break;
+          }
+        }
+      }
+    }
+    final dynamic finalMachineId = machineIdInt ?? product.modelCode ?? product.id;
+
+    // Kirim Purchase Order resmi ke Backend Laravel & Supabase Storage
+    final apiRes = await ApiService.createOrder(
+      machineId: finalMachineId,
+      modelCode: product.modelCode,
       productName: product.name,
-      category: product.category,
+      unitPrice: product.price,
       quantity: quantity,
-      pricePerUnit: product.price,
-      totalAmount: total,
-      dpAmount: dp,
-      pelunasanAmount: pelunasan,
-      orderDate: '06 Okt 2026',
-      estimatedCompletionDate: '24 Okt 2026',
-      status: OrderStatus.verifikasiDp,
-      dpProofPath: proofPath,
       deliveryAddress: deliveryAddress,
       customNotes: customNotes,
-      serialNumber: 'SN-2026-MDI-8820',
+      bankMethod: bankAccount,
+      dpProof: proofPath,
+      contactName: effectiveContact,
+      phone: effectivePhone,
+      companyName: effectiveCompany,
+      email: effectiveEmail,
+    );
+
+    if (apiRes == null || apiRes['data'] == null) {
+      final msg = apiRes?['message'] ?? 'Gagal membuat Purchase Order ke server admin backend pabrik.';
+      throw Exception(msg);
+    }
+
+    final d = apiRes['data'];
+    final OrderModel realOrder = OrderModel(
+      id: d['id']?.toString() ?? d['po_number']?.toString() ?? '',
+      poNumber: d['po_number']?.toString() ?? 'PO-${DateTime.now().year}-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+      companyName: d['company_name']?.toString() ?? effectiveCompany,
+      contactPerson: d['contact_person']?.toString() ?? effectiveContact,
+      productName: d['product_name']?.toString() ?? product.name,
+      category: d['category']?.toString() ?? product.category,
+      quantity: d['quantity'] is int ? d['quantity'] : quantity,
+      pricePerUnit: (d['price_per_unit'] is num ? d['price_per_unit'].toDouble() : product.price),
+      totalAmount: (d['total_amount'] is num ? d['total_amount'].toDouble() : total),
+      dpAmount: (d['dp_amount'] is num ? d['dp_amount'].toDouble() : dp),
+      pelunasanAmount: (d['pelunasan_amount'] is num ? d['pelunasan_amount'].toDouble() : pelunasan),
+      orderDate: d['order_date']?.toString() ?? 'Hari ini',
+      estimatedCompletionDate: d['estimated_completion_date']?.toString() ?? '24 Hari Kerja',
+      status: OrderStatus.verifikasiDp,
+      dpProofPath: d['dp_proof_path']?.toString() ?? proofPath,
+      deliveryAddress: d['delivery_address']?.toString() ?? deliveryAddress,
+      customNotes: d['custom_notes']?.toString() ?? customNotes,
+      serialNumber: d['serial_number']?.toString() ?? 'SN-${DateTime.now().year}-MDI-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
       imageUrl: product.imageUrl,
       description: product.description,
     );
 
-    // Kirim Purchase Order ke Backend Laravel & upload bukti ke Supabase Storage
-    try {
-      int? machineIdInt = int.tryParse(product.id);
-      if (machineIdInt == null || machineIdInt <= 0) {
-        if (_products != null) {
-          for (final p in _products!) {
-            if (p.name.trim().toLowerCase() == product.name.trim().toLowerCase() ||
-                (p.machineType.isNotEmpty && p.machineType == product.machineType)) {
-              machineIdInt = int.tryParse(p.id);
-              break;
-            }
-          }
-        }
-      }
-      final dynamic finalMachineId = machineIdInt ?? product.modelName ?? product.id;
-
-      final apiRes = await ApiService.createOrder(
-        machineId: finalMachineId,
-        quantity: quantity,
-        deliveryAddress: deliveryAddress,
-        customNotes: customNotes,
-        bankMethod: bankAccount,
-        dpProof: proofPath,
-      );
-
-      if (apiRes != null && apiRes['data'] != null) {
-        final d = apiRes['data'];
-        newOrder = OrderModel(
-          id: d['id']?.toString() ?? newOrder.id,
-          poNumber: d['po_number']?.toString() ?? newOrder.poNumber,
-          companyName: d['company_name']?.toString() ?? newOrder.companyName,
-          contactPerson: d['contact_person']?.toString() ?? newOrder.contactPerson,
-          productName: d['product_name']?.toString() ?? product.name,
-          category: d['category']?.toString() ?? product.category,
-          quantity: d['quantity'] is int ? d['quantity'] : quantity,
-          pricePerUnit: (d['price_per_unit'] is num ? d['price_per_unit'].toDouble() : product.price),
-          totalAmount: (d['total_amount'] is num ? d['total_amount'].toDouble() : total),
-          dpAmount: (d['dp_amount'] is num ? d['dp_amount'].toDouble() : dp),
-          pelunasanAmount: (d['pelunasan_amount'] is num ? d['pelunasan_amount'].toDouble() : pelunasan),
-          orderDate: d['order_date']?.toString() ?? '06 Okt 2026',
-          estimatedCompletionDate: d['estimated_completion_date']?.toString() ?? '24 Okt 2026',
-          status: OrderStatus.verifikasiDp,
-          dpProofPath: d['dp_proof_path']?.toString() ?? proofPath,
-          deliveryAddress: d['delivery_address']?.toString() ?? deliveryAddress,
-          customNotes: d['custom_notes']?.toString() ?? customNotes,
-          serialNumber: 'SN-2026-MDI-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
-        );
-      }
-    } catch (e) {
-      debugPrint('createStandardPO backend sync error: $e');
+    // Simpan pesanan riil ke memori aplikasi
+    final existingIdx = _orders.indexWhere((o) => o.poNumber == realOrder.poNumber || o.id == realOrder.id);
+    if (existingIdx == -1) {
+      _orders.insert(0, realOrder);
+    } else {
+      _orders[existingIdx] = realOrder;
     }
 
-    _orders.insert(0, newOrder);
+    // Sinkronisasi ulang dengan backend secara real-time
+    await loadOrdersFromBackend();
+
     addNotification(
       'Purchase Order Diterbitkan!',
-      'PO ${newOrder.poNumber} berhasil dibuat. Bukti transfer DP 50% tersimpan di Supabase dan sedang diverifikasi tim finance.',
+      'PO ${realOrder.poNumber} berhasil dibuat dan tercatat di dashboard pabrik. Bukti transfer DP 50% tersimpan untuk verifikasi tim finance.',
     );
     notifyListeners();
-    return newOrder;
+    return realOrder;
   }
 
   /// Sinkronisasi daftar pesanan dari backend Laravel & status Supabase
@@ -908,7 +916,7 @@ class AppState extends ChangeNotifier {
   /// Customer mengunggah bukti pelunasan sisa 50%
   /// Status berubah menjadi `verifikasiPelunasan` (Menunggu Verifikasi/ACC Admin Website).
   /// PENTING: Jangan langsung berpindah ke `pengirimanInstalasi` sebelum Admin menyatakan valid!
-  Future<bool> uploadPelunasanProof(String orderId, String proofPath) async {
+  Future<bool> uploadPelunasanProof(String orderId, String proofPath, {String? bankMethod}) async {
     final index = _orders.indexWhere((o) => o.id == orderId);
     if (index != -1) {
       _orders[index].pelunasanProofPath = proofPath;
@@ -921,7 +929,7 @@ class AppState extends ChangeNotifier {
       notifyListeners();
 
       try {
-        await ApiService.uploadPelunasanProof(orderId, proofPath);
+        await ApiService.uploadPelunasanProof(orderId, proofPath, bankMethod: bankMethod);
       } catch (e) {
         debugPrint('uploadPelunasanProof ApiService error: $e');
       }
@@ -931,7 +939,7 @@ class AppState extends ChangeNotifier {
   }
 
   /// Customer mengunggah ulang bukti DP 50% setelah ditolak oleh Admin
-  Future<bool> reuploadDpProof(String orderId, String proofPath) async {
+  Future<bool> reuploadDpProof(String orderId, String proofPath, {String? bankMethod}) async {
     final index = _orders.indexWhere((o) => o.id == orderId);
     if (index != -1) {
       _orders[index].dpProofPath = proofPath;
@@ -944,7 +952,7 @@ class AppState extends ChangeNotifier {
       notifyListeners();
 
       try {
-        await ApiService.uploadDpProof(orderId, proofPath);
+        await ApiService.uploadDpProof(orderId, proofPath, bankMethod: bankMethod);
       } catch (e) {
         debugPrint('reuploadDpProof ApiService error: $e');
       }
@@ -953,16 +961,35 @@ class AppState extends ChangeNotifier {
     return false;
   }
 
-  void completeDeliveryAndOpenAfterSales(String orderId) {
-    final index = _orders.indexWhere((o) => o.id == orderId);
+  Future<bool> completeDeliveryAndOpenAfterSales(String orderId) async {
+    final index = _orders.indexWhere((o) => o.id == orderId || o.poNumber == orderId);
     if (index != -1) {
       _orders[index].status = OrderStatus.afterSalesService;
-      addNotification(
-        'Unit Telah Diterima & Terpasang!',
-        'Pesanan ${_orders[index].poNumber} telah aktif. Masa garansi 2 tahun & layanan after-sales purna jual kini dapat digunakan.',
-      );
+      _orders[index].isWarrantyActive = true;
       notifyListeners();
     }
+
+    try {
+      final res = await ApiService.confirmInstallation(orderId);
+      if (res != null && res['success'] == true) {
+        await loadOrdersFromBackend();
+        addNotification(
+          'Unit Telah Diterima & Terpasang!',
+          'Pesanan $orderId telah aktif. Masa garansi 2 tahun & layanan after-sales purna jual kini dapat digunakan.',
+        );
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('completeDeliveryAndOpenAfterSales backend sync error: $e');
+    }
+
+    addNotification(
+      'Unit Telah Diterima & Terpasang!',
+      'Pesanan $orderId telah aktif. Masa garansi 2 tahun & layanan after-sales purna jual kini dapat digunakan.',
+    );
+    notifyListeners();
+    return true;
   }
 
   // Custom Orders / RFQ
@@ -1011,6 +1038,56 @@ class AppState extends ChangeNotifier {
   final List<ServiceTicketModel> _serviceTickets = [];
   List<ServiceTicketModel> get serviceTickets => _serviceTickets;
 
+  final List<Map<String, dynamic>> _myCustomerMachines = [];
+  List<Map<String, dynamic>> get myCustomerMachines {
+    if (_myCustomerMachines.isNotEmpty) {
+      return _myCustomerMachines;
+    }
+    // Dynamic fallback dari pesanan (_orders) jika cache backend belum terisi
+    return _orders.map((o) => {
+      'order_id': o.id,
+      'order_code': o.poNumber,
+      'model': o.productName,
+      'serial_number': o.serialNumber,
+      'delivery_address': o.deliveryAddress,
+      'is_warranty_active': o.isWarrantyActive,
+      'warranty_expiry_date': o.warrantyExpiryDate,
+      'purchase_date': o.orderDate,
+      'category': o.category,
+    }).toList();
+  }
+
+  /// Memuat daftar unit mesin milik customer dari backend
+  Future<void> loadMyCustomerMachines() async {
+    try {
+      final machines = await ApiService.fetchMyMachines();
+      if (machines != null) {
+        _myCustomerMachines.clear();
+        _myCustomerMachines.addAll(machines);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('loadMyCustomerMachines error: $e');
+    }
+  }
+
+  final List<Map<String, dynamic>> _availableServiceDates = [];
+  List<Map<String, dynamic>> get availableServiceDates => _availableServiceDates;
+
+  /// Memuat kalender ketersediaan hari servis dan teknisi standby dari admin
+  Future<void> loadAvailableServiceDates() async {
+    try {
+      final dates = await ApiService.fetchAvailableServiceDates(days: 30);
+      if (dates != null && dates.isNotEmpty) {
+        _availableServiceDates.clear();
+        _availableServiceDates.addAll(dates);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('loadAvailableServiceDates error: $e');
+    }
+  }
+
   Future<void> loadServiceBookingsFromBackend() async {
     try {
       final list = await ApiService.fetchServiceBookings();
@@ -1019,8 +1096,10 @@ class AppState extends ChangeNotifier {
         for (final item in list) {
           TicketStatus parsedStatus = TicketStatus.menungguVerifikasi;
           final statusStr = item['status']?.toString().toLowerCase() ?? '';
-          if (statusStr.contains('menunggu')) {
+          if (statusStr.contains('menunggu') || statusStr.contains('pending')) {
             parsedStatus = TicketStatus.menungguVerifikasi;
+          } else if (statusStr.contains('confirmed') || statusStr.contains('jadwal') || statusStr.contains('dijadwalkan')) {
+            parsedStatus = TicketStatus.dijadwalkan;
           } else if (statusStr.contains('otw')) {
             parsedStatus = TicketStatus.teknisiOtw;
           } else if (statusStr.contains('pengerjaan') || statusStr.contains('proses')) {
@@ -1030,7 +1109,7 @@ class AppState extends ChangeNotifier {
           } else if (statusStr.contains('batal')) {
             parsedStatus = TicketStatus.dibatalkan;
           } else {
-            parsedStatus = TicketStatus.dijadwalkan;
+            parsedStatus = TicketStatus.menungguVerifikasi;
           }
 
           ServiceTicketType parsedType = ServiceTicketType.maintenanceRutin;
@@ -1043,6 +1122,9 @@ class AppState extends ChangeNotifier {
             parsedType = ServiceTicketType.emergencyService;
           }
 
+          final techName = item['technician_name']?.toString();
+          final techPhone = item['technician_phone']?.toString();
+
           parsed.add(ServiceTicketModel(
             id: item['id']?.toString() ?? '',
             orderId: item['order_id']?.toString(),
@@ -1052,13 +1134,14 @@ class AppState extends ChangeNotifier {
             machineModel: item['machine_model']?.toString() ?? 'Mesin Industri',
             type: parsedType,
             preferredDate: item['preferred_date']?.toString() ?? '-',
-            preferredTime: item['preferred_time']?.toString() ?? '10:00 WIB',
+            preferredTime: item['preferred_time']?.toString() ?? '',
             address: item['address']?.toString() ?? '',
             issueDescription: item['issue_description']?.toString() ?? '',
             status: parsedStatus,
-            technicianName: item['technician_name']?.toString() ?? 'Teknisi Senior Pabrik',
-            technicianPhone: item['technician_phone']?.toString() ?? '0812-3344-5566',
+            technicianName: (techName != null && techName.isNotEmpty && techName != 'null') ? techName : null,
+            technicianPhone: (techPhone != null && techPhone.isNotEmpty && techPhone != 'null') ? techPhone : null,
             adminNotes: item['admin_notes']?.toString(),
+            photoUrl: item['photo_url']?.toString(),
             createdAt: item['created_at']?.toString(),
           ));
         }
@@ -1072,15 +1155,16 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<bool> createServiceTicket({
+  Future<Map<String, dynamic>> createServiceTicket({
     required String serialNumber,
     required String machineModel,
     String? orderId,
     required ServiceTicketType type,
     required String preferredDate,
-    required String preferredTime,
+    String preferredTime = '',
     required String address,
     required String issueDescription,
+    String? photo,
   }) async {
     String typeStr = 'maintenance_rutin';
     switch (type) {
@@ -1109,45 +1193,33 @@ class AppState extends ChangeNotifier {
         address: address,
         issueDescription: issueDescription,
         companyName: _companyName,
+        photo: photo,
       );
 
-      if (res != null && res['success'] == true) {
+      if (res != null && (res['success'] == true || res['data'] != null || res['id'] != null)) {
         addNotification(
           'Booking Servis Terkirim',
-          'Permintaan booking servis untuk unit $serialNumber berhasil dikirim ke Admin Pabrik.',
+          'Permintaan booking servis untuk unit $serialNumber pada $preferredDate berhasil diajukan. Status Pending menunggu konfirmasi admin pabrik.',
         );
         await loadServiceBookingsFromBackend();
-        return true;
+        await loadAvailableServiceDates();
+        return {
+          'success': true,
+          'message': res['message'] ?? 'Pengajuan booking servis berhasil dikirim! Status Pending.',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': res?['message'] ?? 'Gagal menjadwalkan servis. Silakan periksa kembali tanggal atau data Anda.',
+        };
       }
     } catch (e) {
       debugPrint('createServiceTicket error: $e');
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan sistem: $e',
+      };
     }
-
-    // Fallback optimis lokal jika jaringan server lambat
-    final newTck = 'SRV-2026-0${_serviceTickets.length + 95}';
-    final newTicket = ServiceTicketModel(
-      id: 'TCK-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-      orderId: orderId,
-      ticketNumber: newTck,
-      companyName: _companyName.isNotEmpty ? _companyName : 'PT Kopi Nusantara Jaya',
-      serialNumber: serialNumber,
-      machineModel: machineModel,
-      type: type,
-      preferredDate: preferredDate,
-      preferredTime: preferredTime,
-      address: address,
-      issueDescription: issueDescription,
-      status: TicketStatus.menungguVerifikasi,
-      technicianName: 'Tim Teknisi Pabrik',
-      technicianPhone: '0812-3344-5566',
-    );
-    _serviceTickets.insert(0, newTicket);
-    addNotification(
-      'Booking Servis Berhasil',
-      'Tiket $newTck berhasil dibuat untuk tanggal $preferredDate.',
-    );
-    notifyListeners();
-    return true;
   }
 
   void updateTicketStatus(String ticketId, TicketStatus newStatus, String technician) {
